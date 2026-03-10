@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import api from '../api'
 import { useAuth } from '../hooks/useAuth'
-import { Copy, Check, Link, Users, TrendingUp, Wallet, Clock, ChevronDown, ChevronRight, UserCheck } from 'lucide-react'
+import { Copy, Check, Link, Users, TrendingUp, Wallet, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 
 // --- SVG Visual Tree ---
 
@@ -298,7 +298,6 @@ export default function PartnerPage() {
   const [sessions, setSessions] = useState([])
   const [tree, setTree] = useState([])
   const [cashback, setCashback] = useState([])
-  const [botPartners, setBotPartners] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [refCopied, setRefCopied] = useState(false)
@@ -306,7 +305,7 @@ export default function PartnerPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [tab, setTab] = useState(user?.has_bot ? 'partners' : 'sessions') // 'tree' | 'cashback' | 'sessions'
+  const [tab, setTab] = useState(user?.has_bot ? 'tree' : 'sessions') // 'tree' | 'cashback' | 'sessions'
 
   useEffect(() => { loadData() }, [])
 
@@ -319,19 +318,16 @@ export default function PartnerPage() {
       if (user?.has_bot) {
         requests.push(api.get('/api/referral/my-tree'))
         requests.push(api.get('/api/referral/my-cashback'))
-        requests.push(api.get('/api/referral/my-partners'))
       }
       const results = await Promise.allSettled(requests)
       const partnerData = results[0]?.status === 'fulfilled' ? results[0].value.data : null
       const sessionsData = results[1]?.status === 'fulfilled' ? results[1].value.data : []
       const treeData = results[2]?.status === 'fulfilled' ? results[2].value.data : []
       const cashbackData = results[3]?.status === 'fulfilled' ? results[3].value.data : []
-      const botPartnersData = results[4]?.status === 'fulfilled' ? results[4].value.data : []
       setPartner(partnerData)
       setSessions(Array.isArray(sessionsData) ? sessionsData : [])
       setTree(Array.isArray(treeData) ? treeData : [])
       setCashback(Array.isArray(cashbackData) ? cashbackData : [])
-      setBotPartners(Array.isArray(botPartnersData) ? botPartnersData : [])
       if (partnerData) {
         setSellerLink(partnerData.seller_link || '')
       }
@@ -452,7 +448,6 @@ export default function PartnerPage() {
       <div className="flex gap-1 mb-4 bg-dark-700/50 rounded-xl p-1">
         {[
           ...(user?.has_bot ? [
-            { key: 'partners', label: 'Партнёры', icon: UserCheck },
             { key: 'tree', label: 'Дерево', icon: Users },
             { key: 'cashback', label: 'Кэшбек', icon: Wallet },
           ] : []),
@@ -471,38 +466,6 @@ export default function PartnerPage() {
       </div>
 
       {/* Tab content */}
-      {user?.has_bot && tab === 'partners' && (
-        <div className="glass-card p-5">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <UserCheck size={18} className="text-accent-400" /> Партнёры вашего бота ({botPartners.length})
-          </h2>
-          {botPartners.length === 0 ? (
-            <p className="text-white/40 text-sm">Пока нет партнёров. Другие пользователи могут стать партнёрами через каталог.</p>
-          ) : (
-            <div className="space-y-2">
-              {botPartners.map(p => (
-                <div key={p.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
-                  <div>
-                    <div className="text-sm font-medium">{p.user_name}</div>
-                    <div className="text-xs text-white/30">{p.user_email}</div>
-                    <div className="text-xs text-white/20 mt-0.5">
-                      С {new Date(p.created_at).toLocaleDateString('ru-RU')}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm">
-                      <span className="text-green-400">{p.active_sessions}</span>
-                      <span className="text-white/20"> / {p.total_sessions} сессий</span>
-                    </div>
-                    <div className="text-xs text-white/30">Кредитов: {p.credits}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {user?.has_bot && tab === 'tree' && <ReferralTree tree={tree} userName={user?.name} />}
 
       {user?.has_bot && tab === 'cashback' && (
