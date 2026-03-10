@@ -92,7 +92,7 @@ async def _send_reset_email(email: str, code: str):
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 @limiter.limit("5/minute")
-async def register(request: Request, data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(request: Request, data: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
     # Cleanup expired reset tokens (piggyback on registration)
     await db.execute(
         delete(PasswordResetToken).where(
@@ -129,7 +129,20 @@ async def register(request: Request, data: RegisterRequest, db: AsyncSession = D
         await _auto_create_partnership(db, user.id, referred_by_id)
         await db.commit()
 
-    return TokenResponse(access_token=create_access_token(user.id))
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="lax",
+        path="/api/auth",
+        max_age=7 * 24 * 3600,
+    )
+
+    return TokenResponse(access_token=access_token)
 
 
 @router.post("/login", response_model=TokenResponse)
