@@ -12,8 +12,9 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Handle Telegram auth result from popup redirect
+  // Handle Telegram auth result (fallback if opened as redirect, not popup)
   useEffect(() => {
+    if (window.opener) return
     const hash = window.location.hash
     if (hash.startsWith('#tgAuthResult=')) {
       try {
@@ -27,31 +28,48 @@ export default function Login() {
   function openTelegramAuth() {
     const botId = import.meta.env.VITE_TELEGRAM_BOT_ID
     if (!botId) return
-    const origin = encodeURIComponent(window.location.origin)
-    const returnTo = encodeURIComponent(window.location.origin + '/login')
-    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=0&request_access=write&return_to=${returnTo}`
+    const origin = window.location.origin
+    const returnUrl = origin + '/login'
+    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write&return_to=${encodeURIComponent(returnUrl)}`
     const w = 550, h = 470
     const left = Math.round(screen.width / 2 - w / 2)
     const top = Math.round(screen.height / 2 - h / 2)
     const popup = window.open(url, 'telegram_auth', `width=${w},height=${h},left=${left},top=${top}`)
-    const timer = setInterval(() => {
+
+    function handleAuth(tgUser) {
+      cleanup()
+      if (popup && !popup.closed) popup.close()
+      setError('')
+      setLoading(true)
+      authRef.current.loginWithTelegram(tgUser)
+        .catch(err => setError(err.response?.data?.detail || 'Ошибка входа через Telegram'))
+        .finally(() => setLoading(false))
+    }
+
+    function onMessage(e) {
+      if (e.origin !== 'https://oauth.telegram.org') return
+      let msg
+      try { msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data } catch { return }
+      if (!msg || msg.event !== 'auth_result') return
+      if (msg.result) handleAuth(msg.result)
+    }
+    window.addEventListener('message', onMessage)
+
+    const pollTimer = setInterval(() => {
       try {
-        if (!popup || popup.closed) { clearInterval(timer); return }
-        if (popup.location.origin === window.location.origin) {
-          const hash = popup.location.hash
-          if (hash.startsWith('#tgAuthResult=')) {
-            const data = JSON.parse(decodeURIComponent(hash.substring(14)))
-            popup.close()
-            clearInterval(timer)
-            setError('')
-            setLoading(true)
-            authRef.current.loginWithTelegram(data)
-              .catch(err => setError(err.response?.data?.detail || 'Ошибка входа через Telegram'))
-              .finally(() => setLoading(false))
-          }
+        if (!popup || popup.closed) { cleanup(); return }
+        const loc = popup.location
+        if (loc.origin === origin && loc.hash.startsWith('#tgAuthResult=')) {
+          const data = JSON.parse(decodeURIComponent(loc.hash.substring(14)))
+          handleAuth(data)
         }
-      } catch { /* cross-origin — popup still on telegram.org */ }
-    }, 200)
+      } catch { /* cross-origin */ }
+    }, 50)
+
+    function cleanup() {
+      clearInterval(pollTimer)
+      window.removeEventListener('message', onMessage)
+    }
   }
 
   // Load Google Sign-In (once)
