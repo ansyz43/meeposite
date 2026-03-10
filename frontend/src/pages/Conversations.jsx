@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api'
-import { MessageSquare, Search, Download } from 'lucide-react'
+import { MessageSquare, Search, Download, ArrowLeft } from 'lucide-react'
 
 export default function Conversations() {
   const [conversations, setConversations] = useState([])
@@ -51,10 +51,10 @@ export default function Conversations() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-8">Переписки</h1>
-      <div className="glass-card overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
-        <div className="flex h-full">
+      <div className="glass-card overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+        <div className="flex h-full relative">
           {/* Left panel — conversation list */}
-          <div className="w-80 border-r border-white/5 flex flex-col">
+          <div className={`w-full md:w-80 border-r border-white/5 flex flex-col ${selected ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-3 border-b border-white/5">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
@@ -94,14 +94,18 @@ export default function Conversations() {
           </div>
 
           {/* Right panel — messages */}
-          <div className="flex-1 flex flex-col">
+          <div className={`flex-1 flex flex-col ${!selected ? 'hidden md:flex' : 'flex'}`}>
             {!selected ? (
               <div className="flex-1 flex items-center justify-center text-white/30 text-sm">
                 Выберите переписку
               </div>
             ) : (
               <>
-              <div className="flex items-center justify-end p-3 border-b border-white/5">
+              <div className="flex items-center justify-between p-3 border-b border-white/5">
+                <button onClick={() => setSelected(null)} className="md:hidden flex items-center gap-1 text-sm text-white/50 hover:text-white">
+                  <ArrowLeft size={16} />
+                  Назад
+                </button>
                 <button
                   onClick={exportConversation}
                   className="flex items-center gap-1.5 text-xs text-white/40 hover:text-accent-400 transition-colors"
