@@ -31,15 +31,28 @@ export default function Login() {
     const container = document.getElementById('telegram-login-btn')
     if (!container) return
     container.innerHTML = ''
-    const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?23'
-    script.setAttribute('data-telegram-login', botName)
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-radius', '12')
-    script.setAttribute('data-onauth', '__onTelegramAuth(user)')
-    script.setAttribute('data-request-access', 'write')
-    script.async = true
-    container.appendChild(script)
+    const iframe = document.createElement('iframe')
+    iframe.src = `https://oauth.telegram.org/embed/${botName}?origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(window.location.origin + '/login')}&size=large&radius=12&request_access=write`
+    iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox'
+    iframe.style.border = 'none'
+    iframe.style.overflow = 'hidden'
+    iframe.style.colorScheme = 'light dark'
+    iframe.width = '240'
+    iframe.height = '40'
+    iframe.frameBorder = '0'
+    iframe.scrolling = 'no'
+    container.appendChild(iframe)
+
+    function handleMessage(event) {
+      if (event.origin !== 'https://oauth.telegram.org') return
+      let data
+      try { data = JSON.parse(event.data) } catch { return }
+      if (data.event === 'auth_result' && data.result) {
+        authRef.current.loginWithTelegram(data.result).catch(() => {})
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
   }, [])
 
   // Load Google Sign-In (once)
