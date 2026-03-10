@@ -89,6 +89,10 @@ async def create_partner(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Вы уже партнёр этого бота")
 
+    # Auto-attach to bot owner's referral tree if not already referred
+    if user.referred_by_id is None and bot.user_id is not None:
+        user.referred_by_id = bot.user_id
+
     partner = ReferralPartner(
         user_id=user.id,
         bot_id=data.bot_id,
