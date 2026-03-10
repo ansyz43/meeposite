@@ -391,7 +391,7 @@ export default function PartnerPage() {
 
       {/* Stats cards — only for bot owners */}
       {user?.has_bot && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="glass-card p-5 text-center">
             <Wallet size={22} className="text-green-400 mx-auto mb-2" />
             <div className="text-2xl font-bold text-green-400">{totalCashback.toFixed(2)}</div>

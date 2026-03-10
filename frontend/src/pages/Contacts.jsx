@@ -35,7 +35,7 @@ export default function Contacts() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <h1 className="text-2xl font-bold">Контакты</h1>
         <button onClick={exportCSV} className="btn-secondary flex items-center gap-2 !py-2 text-sm">
           <Download size={16} /> Экспорт CSV

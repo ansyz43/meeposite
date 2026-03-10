@@ -191,10 +191,10 @@ export default function BotPage() {
 
       {/* Bot link */}
       {bot.bot_username && (
-        <div className="glass-card p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <ExternalLink size={18} className="text-accent-400" />
-            <span className="text-white/70">t.me/{bot.bot_username}</span>
+        <div className="glass-card p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <ExternalLink size={18} className="text-accent-400 shrink-0" />
+            <span className="text-white/70 truncate">t.me/{bot.bot_username}</span>
           </div>
           <button onClick={copyLink} className="flex items-center gap-2 text-sm text-accent-400 hover:text-accent-300">
             {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -277,13 +277,14 @@ export default function BotPage() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
           <button type="button" onClick={disconnectBot}
             className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300">
             <Trash2 size={16} /> Отключить бота
           </button>
-          <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto justify-center">
             <Save size={18} /> {saving ? 'Сохранение...' : 'Сохранить'}
+          </button>
           </button>
         </div>
       </form>
