@@ -2,7 +2,7 @@ import secrets
 import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func, update, text
+from sqlalchemy import select, func, update, text, literal_column
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -344,7 +344,7 @@ async def get_my_tree(
             User.email,
             User.referred_by_id,
             User.created_at,
-            text("1 AS level"),
+            literal_column("1").label("level"),
         )
         .where(User.referred_by_id == user.id)
         .cte(name="tree", recursive=True)
