@@ -32,7 +32,7 @@ export default function Login() {
     if (!container) return
     container.innerHTML = ''
     const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
+    script.src = 'https://telegram.org/js/telegram-widget.js?23'
     script.setAttribute('data-telegram-login', botName)
     script.setAttribute('data-size', 'large')
     script.setAttribute('data-radius', '12')
