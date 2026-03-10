@@ -1,0 +1,445 @@
+"""
+Meepo Bot Worker — manages all Telegram bots from a single process.
+
+Polls the database for active bots and runs them concurrently.
+Periodically checks for new/removed bots and adjusts accordingly.
+"""
+
+import asyncio
+import hashlib
+import logging
+import datetime
+import time
+from collections import OrderedDict
+
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import CommandStart
+from sqlalchemy import select, update, func
+
+from worker.config import settings
+from worker.database import async_session
+from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartner, ReferralSession
+from worker.crypto import decrypt_token
+from worker.ai_service import build_system_prompt, get_ai_response
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("meepo")
+
+# Active bot instances: bot_db_id -> (Bot, Dispatcher, task)
+active_bots: dict[int, tuple[Bot, Dispatcher, asyncio.Task]] = {}
+# Settings hash per bot to detect changes
+bot_settings_hash: dict[int, str] = {}
+
+# Deduplication: track recently processed (chat_id, message_id) to prevent double-processing
+_processed_messages: OrderedDict[tuple[int, int], float] = OrderedDict()
+_DEDUP_MAX_SIZE = 5000
+_DEDUP_TTL = 120  # seconds
+
+# Limit concurrent AI requests to prevent OpenAI rate limit avalanche
+_ai_semaphore = asyncio.Semaphore(30)
+
+
+def _is_duplicate(chat_id: int, message_id: int) -> bool:
+    """Check if this message was already processed. Returns True if duplicate."""
+    key = (chat_id, message_id)
+    now = time.monotonic()
+    # Cleanup old entries
+    while _processed_messages and len(_processed_messages) > _DEDUP_MAX_SIZE:
+        _processed_messages.popitem(last=False)
+    if key in _processed_messages:
+        return True
+    _processed_messages[key] = now
+    return False
+
+
+def _compute_settings_hash(bot_record: BotModel, seller_name: str) -> str:
+    """Compute a hash of bot settings to detect changes."""
+    parts = [
+        bot_record.assistant_name or "",
+        bot_record.seller_link or "",
+        bot_record.greeting_message or "",
+        bot_record.bot_description or "",
+        seller_name,
+    ]
+    return hashlib.md5("|".join(parts).encode()).hexdigest()
+
+
+async def get_chat_history(session, contact_id: int, limit: int = 20) -> list[dict]:
+    """Load recent chat history from database."""
+    result = await session.execute(
+        select(Message)
+        .where(Message.contact_id == contact_id)
+        .order_by(Message.created_at.desc())
+        .limit(limit)
+    )
+    messages = list(reversed(result.scalars().all()))
+    return [{"role": m.role, "content": m.content} for m in messages]
+
+
+async def get_or_create_contact(session, bot_id: int, tg_user: types.User) -> Contact:
+    """Get or create a contact record for a Telegram user."""
+    result = await session.execute(
+        select(Contact).where(
+            Contact.bot_id == bot_id,
+            Contact.telegram_id == tg_user.id,
+        )
+    )
+    contact = result.scalar_one_or_none()
+
+    if contact:
+        contact.telegram_username = tg_user.username
+        contact.first_name = tg_user.first_name
+        contact.last_name = tg_user.last_name
+        contact.last_message_at = datetime.datetime.utcnow()
+        contact.message_count += 1
+        await session.flush()
+        return contact
+
+    contact = Contact(
+        bot_id=bot_id,
+        telegram_id=tg_user.id,
+        telegram_username=tg_user.username,
+        first_name=tg_user.first_name,
+        last_name=tg_user.last_name,
+        last_message_at=datetime.datetime.utcnow(),
+        message_count=1,
+    )
+    session.add(contact)
+    await session.flush()
+    await session.refresh(contact)
+    return contact
+
+
+async def save_message(session, contact_id: int, role: str, content: str):
+    """Save a message to the database."""
+    msg = Message(contact_id=contact_id, role=role, content=content)
+    session.add(msg)
+    await session.flush()
+
+
+async def save_phone(session, contact_id: int, phone: str):
+    """Save phone number from shared contact."""
+    await session.execute(
+        update(Contact).where(Contact.id == contact_id).values(phone=phone)
+    )
+    await session.flush()
+
+
+async def get_referral_partner(session, ref_code: str):
+    """Find a referral partner by ref_code."""
+    result = await session.execute(
+        select(ReferralPartner).where(
+            ReferralPartner.ref_code == ref_code,
+            ReferralPartner.is_active == True,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_referral_session(session, partner_id: int, contact_id: int, telegram_id: int):
+    """Create a referral session (12h) and deduct a credit atomically."""
+    # Atomic deduction: only succeeds if credits > 0
+    result = await session.execute(
+        update(ReferralPartner)
+        .where(ReferralPartner.id == partner_id, ReferralPartner.credits > 0)
+        .values(credits=ReferralPartner.credits - 1)
+        .returning(ReferralPartner.id)
+    )
+    if not result.scalar_one_or_none():
+        return None
+
+    now = datetime.datetime.utcnow()
+    ref_session = ReferralSession(
+        partner_id=partner_id,
+        contact_id=contact_id,
+        telegram_id=telegram_id,
+        started_at=now,
+        expires_at=now + datetime.timedelta(hours=12),
+        is_active=True,
+    )
+    session.add(ref_session)
+    await session.flush()
+    await session.refresh(ref_session)
+    return ref_session
+
+
+async def get_active_referral_session(session, bot_id: int, telegram_id: int):
+    """Find an active, non-expired referral session for this telegram user on this bot."""
+    now = datetime.datetime.utcnow()
+    result = await session.execute(
+        select(ReferralSession, ReferralPartner)
+        .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)
+        .where(
+            ReferralPartner.bot_id == bot_id,
+            ReferralSession.telegram_id == telegram_id,
+        )
+        .order_by(ReferralSession.started_at.desc())
+        .limit(1)
+    )
+    row = result.first()
+    if not row:
+        return None, None
+    ref_session, partner = row
+    if not ref_session.is_active or ref_session.expires_at <= now:
+        # Expired or deactivated
+        if ref_session.is_active:
+            ref_session.is_active = False
+            await session.flush()
+        return None, "expired"
+    return ref_session, partner
+
+
+async def deactivate_referral_session(session, session_id: int):
+    """Deactivate a referral session by ID."""
+    await session.execute(
+        update(ReferralSession)
+        .where(ReferralSession.id == session_id)
+        .values(is_active=False)
+    )
+    await session.flush()
+
+
+async def is_referral_user(session, bot_id: int, telegram_id: int) -> bool:
+    """Check if this telegram user has EVER had a referral session on this bot."""
+    result = await session.execute(
+        select(func.count(ReferralSession.id))
+        .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)
+        .where(
+            ReferralPartner.bot_id == bot_id,
+            ReferralSession.telegram_id == telegram_id,
+        )
+    )
+    count = result.scalar() or 0
+    return count > 0
+
+
+def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
+                      seller_link: str | None, greeting_message: str | None) -> Dispatcher:
+    """Create a dispatcher with handlers for a specific bot."""
+    dp = Dispatcher()
+    system_prompt = build_system_prompt(assistant_name, seller_name, bool(seller_link))
+
+    @dp.message(CommandStart())
+    async def handle_start(message: types.Message):
+        if _is_duplicate(message.chat.id, message.message_id):
+            return
+        async with async_session() as db:
+            contact = await get_or_create_contact(db, bot_db_id, message.from_user)
+
+            # Check for referral deep link: /start ref_XXXXXXXX
+            args = message.text.split(maxsplit=1)
+            if len(args) > 1 and args[1].startswith("ref_"):
+                ref_code = args[1][4:]  # strip "ref_" prefix
+                partner = await get_referral_partner(db, ref_code)
+                if not partner:
+                    await db.commit()
+                    await message.answer("Ссылка недействительна.")
+                    return
+                if partner.credits <= 0:
+                    await db.commit()
+                    await message.answer("К сожалению, эта ссылка больше недоступна.")
+                    return
+                # Check if this user already has an active session
+                existing_session, existing_partner = await get_active_referral_session(db, bot_db_id, message.from_user.id)
+                if existing_session:
+                    if existing_partner and existing_partner.id == partner.id:
+                        # Same partner — just greet
+                        greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
+                        await save_message(db, contact.id, "assistant", greeting)
+                        await db.commit()
+                        await message.answer(greeting)
+                        return
+                    # Different partner — deactivate old session
+                    await deactivate_referral_session(db, existing_session.id)
+                elif existing_partner == "expired":
+                    pass  # expired session from old partner, allow new one
+                # Create new referral session
+                ref_session = await create_referral_session(db, partner.id, contact.id, message.from_user.id)
+                if not ref_session:
+                    await db.commit()
+                    await message.answer("К сожалению, эта ссылка больше недоступна.")
+                    return
+                logger.info(f"Referral session created: partner #{partner.id}, contact #{contact.id}, expires {ref_session.expires_at}")
+                greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
+                await save_message(db, contact.id, "assistant", greeting)
+                await db.commit()
+                await message.answer(greeting)
+                return
+
+            # Regular /start (no ref code) — check if user is a referral user
+            if await is_referral_user(db, bot_db_id, message.from_user.id):
+                # User came through a ref link before — can't use bot without active session
+                existing_session, _ = await get_active_referral_session(db, bot_db_id, message.from_user.id)
+                if existing_session:
+                    # Still has active session — just greet
+                    greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
+                    await save_message(db, contact.id, "assistant", greeting)
+                    await db.commit()
+                    await message.answer(greeting)
+                else:
+                    await db.commit()
+                    await message.answer("Ваша сессия завершена. Для продолжения попросите новую ссылку у вашего продавца.")
+                return
+
+            greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
+            await save_message(db, contact.id, "assistant", greeting)
+            await db.commit()
+            await message.answer(greeting)
+
+    @dp.message(F.contact)
+    async def handle_contact(message: types.Message):
+        async with async_session() as db:
+            contact = await get_or_create_contact(db, bot_db_id, message.from_user)
+            if message.contact and message.contact.phone_number:
+                await save_phone(db, contact.id, message.contact.phone_number)
+            await db.commit()
+        if message.contact and message.contact.phone_number:
+            await message.answer("Спасибо! Ваш номер сохранён. Чем могу помочь?")
+
+    @dp.message(F.text)
+    async def handle_message(message: types.Message):
+        if _is_duplicate(message.chat.id, message.message_id):
+            return
+        async with async_session() as db:
+            contact = await get_or_create_contact(db, bot_db_id, message.from_user)
+            user_text = message.text
+
+            # Check for active referral session — use partner's seller_link if active
+            active_prompt = system_prompt
+            active_seller_link = seller_link
+            ref_session, ref_data = await get_active_referral_session(db, bot_db_id, message.from_user.id)
+            if ref_data == "expired":
+                # Referral user with expired session — block
+                await db.commit()
+                await message.answer("Ваша сессия завершена. Для продолжения попросите новую ссылку у вашего продавца.")
+                return
+            if ref_session and ref_data:
+                # Active referral session — use partner's seller_link
+                active_seller_link = ref_data.seller_link
+                active_prompt = build_system_prompt(assistant_name, seller_name, bool(active_seller_link))
+
+            # Save user message
+            await save_message(db, contact.id, "user", user_text)
+
+            # Get chat history and AI response
+            history = await get_chat_history(db, contact.id)
+            await db.commit()  # commit contact + user message before AI call
+
+        # Show typing indicator while AI is thinking
+        try:
+            await message.answer_chat_action("typing")
+        except Exception:
+            pass
+
+        # AI call outside the DB session to free the connection
+        try:
+            async with _ai_semaphore:
+                ai_response = await asyncio.wait_for(
+                    get_ai_response(active_prompt, history, user_text),
+                    timeout=60.0,
+                )
+        except asyncio.TimeoutError:
+            logger.error(f"AI timeout for bot #{bot_db_id}, contact #{contact.id}")
+            ai_response = "Извините, ответ занял слишком много времени. Попробуйте ещё раз."
+        except Exception as e:
+            logger.error(f"AI response error for bot #{bot_db_id}: {e}")
+            ai_response = "Извините, произошла временная ошибка. Попробуйте ещё раз через несколько секунд."
+
+        # Replace [ССЫЛКА] placeholder with actual seller link
+        if active_seller_link and '[ССЫЛКА]' in ai_response:
+            ai_response = ai_response.replace('[ССЫЛКА]', active_seller_link)
+
+        # Save AI response in a new short session
+        async with async_session() as db:
+            await save_message(db, contact.id, "assistant", ai_response)
+            await db.commit()
+        await message.answer(ai_response)
+
+    return dp
+
+
+async def start_bot(bot_record: BotModel, seller_name: str):
+    """Start polling for a single bot."""
+    retry_delay = 5
+    max_retry_delay = 60
+    while True:
+        try:
+            token = decrypt_token(bot_record.bot_token_encrypted)
+            bot = Bot(token=token)
+            dp = create_dispatcher(
+                bot_db_id=bot_record.id,
+                assistant_name=bot_record.assistant_name,
+                seller_name=seller_name,
+                seller_link=bot_record.seller_link,
+                greeting_message=bot_record.greeting_message,
+            )
+
+            logger.info(f"Starting bot #{bot_record.id} (@{bot_record.bot_username})")
+            retry_delay = 5  # reset on successful connect
+            await dp.start_polling(bot, handle_signals=False)
+        except asyncio.CancelledError:
+            logger.info(f"Bot #{bot_record.id} stopped")
+            return
+        except Exception as e:
+            logger.error(f"Bot #{bot_record.id} error: {e}")
+            logger.info(f"Bot #{bot_record.id} retrying in {retry_delay}s...")
+            await asyncio.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, max_retry_delay)
+
+
+async def sync_bots():
+    """Check database for new/removed bots and sync with active instances."""
+    async with async_session() as session:
+        result = await session.execute(
+            select(BotModel, User)
+            .join(User, BotModel.user_id == User.id)
+            .where(BotModel.is_active == True, User.is_active == True)
+        )
+        db_bots = result.all()
+
+    active_ids = set()
+    for bot_record, user_record in db_bots:
+        active_ids.add(bot_record.id)
+        new_hash = _compute_settings_hash(bot_record, user_record.name)
+
+        if bot_record.id not in active_bots:
+            # Start new bot
+            task = asyncio.create_task(start_bot(bot_record, user_record.name))
+            active_bots[bot_record.id] = (None, None, task)
+            bot_settings_hash[bot_record.id] = new_hash
+        elif bot_settings_hash.get(bot_record.id) != new_hash:
+            # Settings changed — restart bot
+            logger.info(f"Settings changed for bot #{bot_record.id}, restarting...")
+            _, _, old_task = active_bots[bot_record.id]
+            old_task.cancel()
+            task = asyncio.create_task(start_bot(bot_record, user_record.name))
+            active_bots[bot_record.id] = (None, None, task)
+            bot_settings_hash[bot_record.id] = new_hash
+
+    # Stop removed/deactivated bots
+    to_remove = set(active_bots.keys()) - active_ids
+    for bot_id in to_remove:
+        logger.info(f"Stopping bot #{bot_id} (deactivated or removed)")
+        _, _, task = active_bots[bot_id]
+        task.cancel()
+        del active_bots[bot_id]
+        bot_settings_hash.pop(bot_id, None)
+
+
+async def main():
+    logger.info("Meepo Bot Worker starting...")
+
+    while True:
+        try:
+            await sync_bots()
+            bot_count = len(active_bots)
+            logger.info(f"Active bots: {bot_count}")
+        except Exception as e:
+            logger.error(f"Sync error: {e}")
+
+        # Check for changes every 10 seconds
+        await asyncio.sleep(10)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

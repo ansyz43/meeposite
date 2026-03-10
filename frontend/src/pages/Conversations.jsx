@@ -1,0 +1,136 @@
+import { useEffect, useState } from 'react'
+import api from '../api'
+import { MessageSquare, Search, Download } from 'lucide-react'
+
+export default function Conversations() {
+  const [conversations, setConversations] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+
+  useEffect(() => { loadConversations() }, [search])
+
+  async function loadConversations() {
+    setLoading(true)
+    try {
+      const { data } = await api.get('/api/conversations', { params: { search, per_page: 100 } })
+      setConversations(data.conversations)
+      setTotal(data.total)
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+
+  async function selectConversation(contactId) {
+    setSelected(contactId)
+    try {
+      const { data } = await api.get(`/api/conversations/${contactId}`, { params: { per_page: 100 } })
+      setMessages(data.messages)
+    } catch { /* ignore */ }
+  }
+
+  async function exportConversation() {
+    try {
+      const { data } = await api.get(`/api/conversations/${selected}/export`, { responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `chat_${selected}.txt`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { /* ignore */ }
+  }
+
+  function displayName(c) {
+    if (c.first_name) return `${c.first_name}${c.last_name ? ' ' + c.last_name : ''}`
+    if (c.telegram_username) return '@' + c.telegram_username
+    return 'Пользователь'
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-8">Переписки</h1>
+      <div className="glass-card overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
+        <div className="flex h-full">
+          {/* Left panel — conversation list */}
+          <div className="w-80 border-r border-white/5 flex flex-col">
+            <div className="p-3 border-b border-white/5">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Поиск..." className="input-field pl-9 !py-2 text-sm" />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {loading && <div className="p-4 text-white/40 text-sm">Загрузка...</div>}
+              {!loading && conversations.length === 0 && (
+                <div className="p-8 text-center text-white/30 text-sm">
+                  <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
+                  Пока нет переписок
+                </div>
+              )}
+              {conversations.map(c => (
+                <button
+                  key={c.contact_id}
+                  onClick={() => selectConversation(c.contact_id)}
+                  className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${
+                    selected === c.contact_id ? 'bg-accent-500/10 border-l-2 border-l-accent-500' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-sm truncate">{displayName(c)}</span>
+                    <span className="text-xs text-white/30">
+                      {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString('ru') : ''}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/40 truncate">{c.last_message}</p>
+                </button>
+              ))}
+            </div>
+            <div className="p-3 border-t border-white/5 text-xs text-white/30">
+              Всего: {total}
+            </div>
+          </div>
+
+          {/* Right panel — messages */}
+          <div className="flex-1 flex flex-col">
+            {!selected ? (
+              <div className="flex-1 flex items-center justify-center text-white/30 text-sm">
+                Выберите переписку
+              </div>
+            ) : (
+              <>
+              <div className="flex items-center justify-end p-3 border-b border-white/5">
+                <button
+                  onClick={exportConversation}
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-accent-400 transition-colors"
+                >
+                  <Download size={14} />
+                  Скачать переписку
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                {messages.map(m => (
+                  <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
+                      m.role === 'user'
+                        ? 'bg-dark-700 text-white/90 rounded-tl-md'
+                        : 'bg-accent-500/20 text-white/90 rounded-tr-md'
+                    }`}>
+                      <p>{m.content}</p>
+                      <div className="text-[10px] text-white/30 mt-1">
+                        {new Date(m.created_at).toLocaleString('ru')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

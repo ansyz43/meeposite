@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    command: postgres -c max_connections=200 -c shared_buffers=256MB -c work_mem=8MB
+    environment:
+      POSTGRES_USER: meepo
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: meepo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meepo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+    environment:
+      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:-changeme}@db:5432/meepo
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TELEGRAM_BOT_TOKEN_LOGIN: ${TELEGRAM_BOT_TOKEN_LOGIN:-}
+    ports:
+      - "8000:8000"
+
+  bot_worker:
+    build: ./bot_worker
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+    environment:
+      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:-changeme}@db:5432/meepo
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${API_URL:-http://localhost:8000}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_TELEGRAM_BOT_NAME: ${VITE_TELEGRAM_BOT_NAME:-}
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: ${API_URL:-http://localhost:8000}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_TELEGRAM_BOT_NAME: ${VITE_TELEGRAM_BOT_NAME:-}
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pgdata:
+  uploads_data:
