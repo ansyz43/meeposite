@@ -17,32 +17,47 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Handle Telegram auth result from popup redirect
   useEffect(() => {
-    window.__onTelegramAuth = async (tgUser) => {
+    const hash = window.location.hash
+    if (hash.startsWith('#tgAuthResult=')) {
       try {
-        await authRef.current.loginWithTelegram({ ...tgUser, ref_code: refCodeRef.current || undefined })
-      } catch (err) {
-        // error handled by auth
-      }
+        const data = JSON.parse(decodeURIComponent(hash.substring(14)))
+        window.location.hash = ''
+        authRef.current.loginWithTelegram({ ...data, ref_code: refCodeRef.current || undefined }).catch(() => {})
+      } catch { /* ignore parse errors */ }
     }
-    return () => { delete window.__onTelegramAuth }
   }, [])
 
-  useEffect(() => {
-    const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME
-    if (!botName) return
-    const container = document.getElementById('telegram-register-btn')
-    if (!container) return
-    container.innerHTML = ''
-    const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?23'
-    script.setAttribute('data-telegram-login', botName)
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-radius', '12')
-    script.setAttribute('data-onauth', '__onTelegramAuth(user)')
-    script.setAttribute('data-request-access', 'write')
-    container.appendChild(script)
-  }, [])
+  function openTelegramAuth() {
+    const botId = import.meta.env.VITE_TELEGRAM_BOT_ID
+    if (!botId) return
+    const origin = encodeURIComponent(window.location.origin)
+    const returnTo = encodeURIComponent(window.location.href)
+    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=0&request_access=write&return_to=${returnTo}`
+    const w = 550, h = 470
+    const left = Math.round(screen.width / 2 - w / 2)
+    const top = Math.round(screen.height / 2 - h / 2)
+    const popup = window.open(url, 'telegram_auth', `width=${w},height=${h},left=${left},top=${top}`)
+    const timer = setInterval(() => {
+      try {
+        if (!popup || popup.closed) { clearInterval(timer); return }
+        if (popup.location.origin === window.location.origin) {
+          const hash = popup.location.hash
+          if (hash.startsWith('#tgAuthResult=')) {
+            const data = JSON.parse(decodeURIComponent(hash.substring(14)))
+            popup.close()
+            clearInterval(timer)
+            setError('')
+            setLoading(true)
+            authRef.current.loginWithTelegram({ ...data, ref_code: refCodeRef.current || undefined })
+              .catch(err => setError(err.response?.data?.detail || 'Ошибка регистрации через Telegram'))
+              .finally(() => setLoading(false))
+          }
+        }
+      } catch { /* cross-origin — popup still on telegram.org */ }
+    }, 200)
+  }
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -91,7 +106,7 @@ export default function Register() {
     }
   }
 
-  const showSocial = import.meta.env.VITE_TELEGRAM_BOT_NAME || import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const showSocial = import.meta.env.VITE_TELEGRAM_BOT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
@@ -111,8 +126,15 @@ export default function Register() {
           {showSocial && (
             <>
               <div className="space-y-3 mb-5">
-                {import.meta.env.VITE_TELEGRAM_BOT_NAME && (
-                  <div id="telegram-register-btn" className="flex justify-center"></div>
+                {import.meta.env.VITE_TELEGRAM_BOT_ID && (
+                  <button onClick={openTelegramAuth} type="button"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-medium"
+                    style={{ background: '#54a9eb' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.87 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.54.17.14.12.18.28.2.47-.01.06.01.24 0 .37z"/>
+                    </svg>
+                    Войти через Telegram
+                  </button>
                 )}
                 {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
                   <div id="google-register-btn" className="flex justify-center"></div>
