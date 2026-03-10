@@ -285,7 +285,6 @@ export default function BotPage() {
           <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto justify-center">
             <Save size={18} /> {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
-          </button>
         </div>
       </form>
 
