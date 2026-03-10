@@ -6,6 +6,7 @@ from worker.config import settings
 
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
+    base_url=settings.OPENAI_BASE_URL or None,
     timeout=httpx.Timeout(60.0, connect=10.0),
     max_retries=2,
 )

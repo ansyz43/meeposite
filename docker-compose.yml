@@ -50,6 +50,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:-changeme}@db:5432/meepo
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
 
   frontend:
