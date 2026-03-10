@@ -60,6 +60,7 @@ services:
         VITE_API_URL: ${API_URL:-http://localhost:8000}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         VITE_TELEGRAM_BOT_NAME: ${VITE_TELEGRAM_BOT_NAME:-}
+        VITE_TELEGRAM_BOT_ID: ${VITE_TELEGRAM_BOT_ID:-}
     restart: always
     ports:
       - "3000:3000"
@@ -67,6 +68,7 @@ services:
       VITE_API_URL: ${API_URL:-http://localhost:8000}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
       VITE_TELEGRAM_BOT_NAME: ${VITE_TELEGRAM_BOT_NAME:-}
+      VITE_TELEGRAM_BOT_ID: ${VITE_TELEGRAM_BOT_ID:-}
 
   nginx:
     image: nginx:alpine
