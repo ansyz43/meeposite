@@ -16,11 +16,17 @@ export default function Login() {
   useEffect(() => {
     const hash = window.location.hash
     if (hash.startsWith('#tgAuthResult=')) {
+      const raw = hash.substring(14)
+      let data
       try {
-        const data = JSON.parse(decodeURIComponent(hash.substring(14)))
+        data = JSON.parse(atob(raw))
+      } catch {
+        try { data = JSON.parse(decodeURIComponent(raw)) } catch { /* ignore */ }
+      }
+      if (data) {
         window.history.replaceState(null, '', window.location.pathname + window.location.search)
         authRef.current.loginWithTelegram(data).catch(() => {})
-      } catch { /* ignore parse errors */ }
+      }
     }
   }, [])
 
@@ -67,7 +73,9 @@ export default function Login() {
         if (!popup || popup.closed) { cleanup(); return }
         const loc = popup.location
         if (loc.origin === origin && loc.hash.startsWith('#tgAuthResult=')) {
-          const data = JSON.parse(decodeURIComponent(loc.hash.substring(14)))
+          const raw = loc.hash.substring(14)
+          let data
+          try { data = JSON.parse(atob(raw)) } catch { data = JSON.parse(decodeURIComponent(raw)) }
           handleAuth(data)
         }
       } catch { /* cross-origin */ }
