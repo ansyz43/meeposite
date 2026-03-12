@@ -60,7 +60,8 @@ export default function BotPage() {
       setCreditsAmount(5)
       loadPartners()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка')
     }
   }
 
@@ -73,7 +74,8 @@ export default function BotPage() {
       await loadBot()
       await loadProfile()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка создания бота')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка создания бота')
     }
     setClaiming(false)
   }
@@ -93,7 +95,8 @@ export default function BotPage() {
       setSuccess('Настройки сохранены!')
       await loadBot()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка сохранения')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка сохранения')
     }
     setSaving(false)
   }
@@ -105,7 +108,8 @@ export default function BotPage() {
       setBot(null)
       setSuccess('Бот отключён')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка')
     }
   }
 
@@ -137,7 +141,8 @@ export default function BotPage() {
       setBot(data)
       setSuccess('Аватарка загружена!')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка загрузки аватарки')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка загрузки аватарки')
     }
     setAvatarUploading(false)
   }
