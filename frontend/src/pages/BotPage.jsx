@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../api'
-import { Bot, Copy, Check, ExternalLink, Save, Trash2, Plus, Camera, Users, PlusCircle, Send, Image, Clock, CheckCircle, AlertCircle, Megaphone, Link2 } from 'lucide-react'
+import { Bot, Copy, Check, Save, Trash2, Plus, Camera, Users, PlusCircle, Link2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 export default function BotPage() {
@@ -27,14 +27,6 @@ export default function BotPage() {
   const [botDescription, setBotDescription] = useState('')
   const [allowPartners, setAllowPartners] = useState(false)
 
-  // Broadcast
-  const [broadcasts, setBroadcasts] = useState([])
-  const [showBroadcastForm, setShowBroadcastForm] = useState(false)
-  const [bcText, setBcText] = useState('')
-  const [bcImage, setBcImage] = useState(null)
-  const [bcSending, setBcSending] = useState(false)
-  const bcFileRef = useRef(null)
-
   useEffect(() => { loadBot() }, [])
 
   async function loadBot() {
@@ -48,7 +40,6 @@ export default function BotPage() {
         setBotDescription(data.bot_description || '')
         setAllowPartners(data.allow_partners || false)
         if (data.allow_partners) loadPartners()
-        loadBroadcasts()
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -156,46 +147,9 @@ export default function BotPage() {
     setAvatarUploading(false)
   }
 
-  async function loadBroadcasts() {
-    try {
-      const { data } = await api.get('/api/bot/broadcasts')
-      setBroadcasts(data)
-    } catch { /* ignore */ }
-  }
-
-  async function sendBroadcast() {
-    if (!bcText.trim()) return
-    if (!confirm(`Отправить рассылку всем контактам бота?\n\n"${bcText.trim().substring(0, 100)}..."`)) return
-    setBcSending(true)
-    setError('')
-    try {
-      const formData = new FormData()
-      formData.append('message_text', bcText.trim())
-      if (bcImage) formData.append('image', bcImage)
-      await api.post('/api/bot/broadcast', formData)
-      setSuccess('Рассылка запущена!')
-      setBcText('')
-      setBcImage(null)
-      setShowBroadcastForm(false)
-      if (bcFileRef.current) bcFileRef.current.value = ''
-      loadBroadcasts()
-    } catch (err) {
-      const d = err.response?.data?.detail
-      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка отправки рассылки')
-    }
-    setBcSending(false)
-  }
-
   useEffect(() => {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
   }, [success])
-
-  // Auto-refresh broadcasts while any is sending
-  useEffect(() => {
-    if (!broadcasts.some(bc => bc.status === 'sending' || bc.status === 'pending')) return
-    const t = setInterval(loadBroadcasts, 3000)
-    return () => clearInterval(t)
-  }, [broadcasts])
 
   if (loading) return <div className="text-white/50">Загрузка...</div>
 
@@ -345,106 +299,6 @@ export default function BotPage() {
           </button>
         </div>
       </form>
-
-      {/* Broadcast / Рассылка */}
-      <div className="mt-6">
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Megaphone size={20} className="text-accent-400" />
-              <h2 className="font-semibold">Рассылка</h2>
-            </div>
-            {!showBroadcastForm && (
-              <button onClick={() => setShowBroadcastForm(true)}
-                className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
-                <Send size={16} /> Создать рассылку
-              </button>
-            )}
-          </div>
-
-          {showBroadcastForm && (
-            <div className="space-y-4 mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-              <div>
-                <label className="block text-sm text-white/60 mb-1.5">Текст сообщения</label>
-                <textarea value={bcText} onChange={e => setBcText(e.target.value)}
-                  className="input-field min-h-[120px] resize-y" placeholder="Текст рассылки..." maxLength={4096} />
-                <p className="text-xs text-white/30 mt-1">Поддерживается HTML: &lt;b&gt;жирный&lt;/b&gt;, &lt;i&gt;курсив&lt;/i&gt;, &lt;a href=&quot;...&quot;&gt;ссылка&lt;/a&gt;</p>
-              </div>
-              <div>
-                <label className="block text-sm text-white/60 mb-1.5">Картинка (не обязательно)</label>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => bcFileRef.current?.click()}
-                    className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-white/70 hover:text-white transition-colors">
-                    <Image size={16} /> {bcImage ? bcImage.name : 'Выбрать файл'}
-                  </button>
-                  {bcImage && (
-                    <button onClick={() => { setBcImage(null); if (bcFileRef.current) bcFileRef.current.value = '' }}
-                      className="text-red-400 hover:text-red-300 text-xs">✕ Убрать</button>
-                  )}
-                </div>
-                <input ref={bcFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
-                  onChange={e => setBcImage(e.target.files?.[0] || null)} />
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <button onClick={sendBroadcast} disabled={bcSending || !bcText.trim()}
-                  className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50">
-                  <Send size={16} /> {bcSending ? 'Отправка...' : 'Отправить всем'}
-                </button>
-                <button onClick={() => { setShowBroadcastForm(false); setBcText(''); setBcImage(null) }}
-                  className="text-sm text-white/40 hover:text-white/60">Отмена</button>
-              </div>
-            </div>
-          )}
-
-          {broadcasts.length > 0 && (
-            <div>
-              <h3 className="text-sm text-white/40 mb-3">История рассылок</h3>
-              <div className="space-y-2">
-                {broadcasts.map(bc => (
-                  <div key={bc.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg bg-white/5 border border-white/5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white/80 truncate">{bc.message_text}</p>
-                      <p className="text-xs text-white/30 mt-0.5">
-                        {new Date(bc.created_at).toLocaleString('ru-RU')}
-                        {bc.image_url && <span className="ml-2">📷 с картинкой</span>}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs shrink-0">
-                      <span className="text-green-400">✓ {bc.sent_count}</span>
-                      {bc.failed_count > 0 && <span className="text-red-400">✕ {bc.failed_count}</span>}
-                      <span className="text-white/30">/ {bc.total_contacts}</span>
-                      {bc.status === 'sending' && (
-                        <span className="flex items-center gap-1 text-yellow-400">
-                          <Clock size={12} className="animate-spin" /> Отправка
-                        </span>
-                      )}
-                      {bc.status === 'completed' && (
-                        <span className="flex items-center gap-1 text-green-400">
-                          <CheckCircle size={12} /> Готово
-                        </span>
-                      )}
-                      {bc.status === 'pending' && (
-                        <span className="flex items-center gap-1 text-white/40">
-                          <Clock size={12} /> Ожидание
-                        </span>
-                      )}
-                      {bc.status === 'failed' && (
-                        <span className="flex items-center gap-1 text-red-400">
-                          <AlertCircle size={12} /> Ошибка
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {broadcasts.length === 0 && !showBroadcastForm && (
-            <p className="text-white/30 text-sm">Рассылок пока не было</p>
-          )}
-        </div>
-      </div>
 
       {/* Partners section */}
       {allowPartners && (

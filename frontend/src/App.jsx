@@ -11,6 +11,7 @@ import Contacts from './pages/Contacts'
 import Profile from './pages/Profile'
 import CatalogPage from './pages/CatalogPage'
 import PartnerPage from './pages/PartnerPage'
+import BroadcastPage from './pages/BroadcastPage'
 import ResetPassword from './pages/ResetPassword'
 import DashboardLayout from './components/DashboardLayout'
 
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="contacts" element={<Contacts />} />
           <Route path="catalog" element={<CatalogPage />} />
           <Route path="partner" element={<PartnerPage />} />
+          <Route path="broadcast" element={<BroadcastPage />} />
           <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
