@@ -45,8 +45,8 @@ export default function Dashboard() {
       {!bot && (
         <div className="glass-card p-8 text-center">
           <Bot size={48} className="text-accent-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Подключите бота</h2>
-          <p className="text-white/50 mb-6">Создайте бота в @BotFather и подключите его к платформе</p>
+          <h2 className="text-xl font-semibold mb-2">У вас пока нет бота</h2>
+          <p className="text-white/50 mb-6">Нажмите кнопку — система автоматически назначит вам персонального ИИ-бота</p>
           <Link to="/dashboard/bot" className="btn-primary inline-flex items-center gap-2">
             Подключить <ArrowRight size={18} />
           </Link>
