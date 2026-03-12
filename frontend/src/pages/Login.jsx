@@ -12,14 +12,13 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Handle Telegram auth result (fallback if opened as redirect, not popup)
+  // Handle Telegram auth result (redirect fallback — mobile or popup)
   useEffect(() => {
-    if (window.opener) return
     const hash = window.location.hash
     if (hash.startsWith('#tgAuthResult=')) {
       try {
         const data = JSON.parse(decodeURIComponent(hash.substring(14)))
-        window.location.hash = ''
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
         authRef.current.loginWithTelegram(data).catch(() => {})
       } catch { /* ignore parse errors */ }
     }
@@ -31,6 +30,14 @@ export default function Login() {
     const origin = window.location.origin
     const returnUrl = origin + '/login'
     const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write&return_to=${encodeURIComponent(returnUrl)}`
+
+    // On mobile, redirect directly instead of popup (popups often blocked)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      window.location.href = url
+      return
+    }
+
     const w = 550, h = 470
     const left = Math.round(screen.width / 2 - w / 2)
     const top = Math.round(screen.height / 2 - h / 2)

@@ -78,7 +78,7 @@ export default function Contacts() {
               {contacts.map(c => (
                 <tr key={c.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3">{[c.first_name, c.last_name].filter(Boolean).join(' ') || '—'}</td>
-                  <td className="px-4 py-3 text-white/60">{c.telegram_username ? '@' + c.telegram_username : '—'}</td>
+                  <td className="px-4 py-3 text-white/60">{c.telegram_username ? <a href={`https://t.me/${c.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-accent-400 hover:underline">@{c.telegram_username}</a> : '—'}</td>
                   <td className="px-4 py-3 text-white/60">{c.phone || '—'}</td>
                   <td className="px-4 py-3 text-white/40">{c.first_message_at ? new Date(c.first_message_at).toLocaleDateString('ru') : '—'}</td>
                   <td className="px-4 py-3 text-white/40">{c.last_message_at ? new Date(c.last_message_at).toLocaleDateString('ru') : '—'}</td>

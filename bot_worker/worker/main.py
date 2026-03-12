@@ -346,12 +346,17 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             ai_response = "Извините, произошла временная ошибка. Попробуйте ещё раз через несколько секунд."
 
         # Replace [ССЫЛКА] placeholder with actual seller link
+        link_was_sent = False
         if active_seller_link and '[ССЫЛКА]' in ai_response:
             ai_response = ai_response.replace('[ССЫЛКА]', active_seller_link)
+            link_was_sent = True
 
         # Save AI response in a new short session
         async with async_session() as db:
             await save_message(db, contact.id, "assistant", ai_response)
+            if link_was_sent:
+                from sqlalchemy import update
+                await db.execute(update(Contact).where(Contact.id == contact.id).values(link_sent=True))
             await db.commit()
         await message.answer(ai_response)
 

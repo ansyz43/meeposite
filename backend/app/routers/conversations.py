@@ -173,6 +173,7 @@ async def list_conversations(
             last_message=last_messages.get(c.id),
             last_message_at=c.last_message_at,
             message_count=c.message_count,
+            link_sent=c.link_sent,
         ))
 
     return ConversationListResponse(conversations=previews, total=total)

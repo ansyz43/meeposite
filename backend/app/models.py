@@ -62,6 +62,7 @@ class Contact(Base):
     first_message_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     last_message_at: Mapped[datetime.datetime | None] = mapped_column(DateTime)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
+    link_sent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     bot: Mapped["Bot"] = relationship("Bot", back_populates="contacts")
     messages: Mapped[list["Message"]] = relationship("Message", back_populates="contact", cascade="all, delete-orphan")
