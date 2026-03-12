@@ -360,7 +360,8 @@ export default function PartnerPage() {
       setPartner(data)
       setSuccess('Ссылка обновлена!')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка')
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка')
     }
     setSaving(false)
   }

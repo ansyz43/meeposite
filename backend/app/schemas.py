@@ -87,7 +87,7 @@ class BotUpdateRequest(BaseModel):
             return v
         v = v.strip()
         if v and not v.startswith(("http://", "https://")):
-            raise ValueError("Ссылка должна начинаться с http:// или https://")
+            v = "https://" + v
         return v
 
 
@@ -174,7 +174,7 @@ class ReferralPartnerCreate(BaseModel):
     def validate_seller_link(cls, v: str) -> str:
         v = v.strip()
         if not v.startswith(("http://", "https://")):
-            raise ValueError("Ссылка должна начинаться с http:// или https://")
+            v = "https://" + v
         return v
 
 
@@ -186,7 +186,7 @@ class ReferralPartnerUpdate(BaseModel):
     def validate_seller_link(cls, v: str) -> str:
         v = v.strip()
         if not v.startswith(("http://", "https://")):
-            raise ValueError("Ссылка должна начинаться с http:// или https://")
+            v = "https://" + v
         return v
 
 
