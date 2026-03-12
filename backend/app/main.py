@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import engine, Base
-from app.routers import auth, profile, bot, conversations, referral
+from app.routers import auth, profile, bot, conversations, referral, broadcast
 
 
 limiter = Limiter(key_func=get_remote_address)
@@ -65,3 +65,4 @@ app.include_router(profile.router)
 app.include_router(bot.router)
 app.include_router(conversations.router)
 app.include_router(referral.router)
+app.include_router(broadcast.router)

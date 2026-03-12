@@ -241,6 +241,18 @@ class TreeNodeResponse(BaseModel):
     children: list["TreeNodeResponse"] = []
 
 
+# --- Broadcast ---
+class BroadcastResponse(BaseModel):
+    id: int
+    message_text: str
+    image_url: str | None
+    total_contacts: int
+    sent_count: int
+    failed_count: int
+    status: str
+    created_at: datetime.datetime
+
+
 class CashbackTransactionResponse(BaseModel):
     id: int
     from_user_name: str
