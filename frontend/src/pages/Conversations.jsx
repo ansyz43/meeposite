@@ -75,11 +75,16 @@ export default function Conversations() {
                   key={c.contact_id}
                   onClick={() => selectConversation(c.contact_id)}
                   className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${
-                    selected === c.contact_id ? 'bg-accent-500/10 border-l-2 border-l-accent-500' : ''
+                    selected === c.contact_id ? 'bg-accent-500/10 border-l-2 border-l-accent-500'
+                    : c.link_sent ? 'bg-green-500/5 border-l-2 border-l-green-500/50'
+                    : ''
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-sm truncate">{displayName(c)}</span>
+                    <span className="font-medium text-sm truncate">
+                      {displayName(c)}
+                      {c.link_sent && <span className="ml-2 text-[10px] text-green-400">✓ ссылка</span>}
+                    </span>
                     <span className="text-xs text-white/30">
                       {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString('ru') : ''}
                     </span>

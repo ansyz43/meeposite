@@ -143,6 +143,7 @@ class ConversationPreview(BaseModel):
     last_message: str | None
     last_message_at: datetime.datetime | None
     message_count: int
+    link_sent: bool = False
 
 
 class ConversationListResponse(BaseModel):
