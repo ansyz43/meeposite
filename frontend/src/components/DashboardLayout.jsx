@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Bot, MessageSquare, Users, User, LogOut, LayoutDashboard, Handshake, Store, Menu, X } from 'lucide-react'
+import { Bot, MessageSquare, Users, User, LogOut, LayoutDashboard, Handshake, Store, Menu, X, Megaphone } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
@@ -18,6 +18,7 @@ export default function DashboardLayout() {
       { to: '/dashboard/bot', icon: Bot, label: 'Мой бот' },
       { to: '/dashboard/conversations', icon: MessageSquare, label: 'Переписки' },
       { to: '/dashboard/contacts', icon: Users, label: 'Контакты' },
+      { to: '/dashboard/broadcast', icon: Megaphone, label: 'Рассылка' },
     ] : []),
     { to: '/dashboard/catalog', icon: Store, label: 'Каталог ботов' },
     { to: '/dashboard/partner', icon: Handshake, label: 'Партнёрство' },
