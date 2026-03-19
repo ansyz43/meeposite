@@ -20,7 +20,7 @@ from worker.config import settings
 from worker.database import async_session
 from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartner, ReferralSession
 from worker.crypto import decrypt_token
-from worker.ai_service import build_system_prompt, get_ai_response
+from worker.ai_service import get_ai_response
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("meepo")
@@ -217,7 +217,6 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                       seller_link: str | None, greeting_message: str | None) -> Dispatcher:
     """Create a dispatcher with handlers for a specific bot."""
     dp = Dispatcher()
-    system_prompt = build_system_prompt(assistant_name, seller_name, bool(seller_link))
 
     @dp.message(CommandStart())
     async def handle_start(message: types.Message):
@@ -305,7 +304,6 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             user_text = message.text
 
             # Check for active referral session — use partner's seller_link if active
-            active_prompt = system_prompt
             active_seller_link = seller_link
             ref_session, ref_data = await get_active_referral_session(db, bot_db_id, message.from_user.id)
             if ref_data == "expired":
@@ -316,13 +314,12 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             if ref_session and ref_data:
                 # Active referral session — use partner's seller_link
                 active_seller_link = ref_data.seller_link
-                active_prompt = build_system_prompt(assistant_name, seller_name, bool(active_seller_link))
 
             # Save user message
             await save_message(db, contact.id, "user", user_text)
 
-            # Get chat history and AI response
-            history = await get_chat_history(db, contact.id)
+            # Get chat history
+            history = await get_chat_history(db, contact.id, limit=10)
             await db.commit()  # commit contact + user message before AI call
 
         # Show typing indicator while AI is thinking
@@ -335,7 +332,10 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         try:
             async with _ai_semaphore:
                 ai_response = await asyncio.wait_for(
-                    get_ai_response(active_prompt, history, user_text),
+                    get_ai_response(
+                        assistant_name, seller_name, bool(active_seller_link),
+                        history, user_text,
+                    ),
                     timeout=60.0,
                 )
         except asyncio.TimeoutError:

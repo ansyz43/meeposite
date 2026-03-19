@@ -1,0 +1,7 @@
+name = "openai-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Set via: npx wrangler secret put PROXY_SECRET
+# PROXY_SECRET = ""

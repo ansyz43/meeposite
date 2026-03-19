@@ -1,44 +1,21 @@
 import httpx
-from pathlib import Path
 from openai import AsyncOpenAI
 
 from worker.config import settings
+from worker.rag import select_relevant_kb
 
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
     base_url=settings.OPENAI_BASE_URL or None,
     timeout=httpx.Timeout(60.0, connect=10.0),
     max_retries=2,
+    default_headers={"X-Proxy-Key": settings.PROXY_SECRET} if settings.PROXY_SECRET else {},
 )
 
-# Load knowledge base once at startup
-_search_paths = [
-    Path(__file__).parent.parent / "knowledge_base" / "fitline.txt",
-    Path(__file__).parent.parent.parent / "knowledge_base" / "fitline.txt",
-    Path("/app/knowledge_base/fitline.txt"),
-]
+# ─── Static prompt (CACHED by OpenAI — identical across all bots/messages) ───
+# Must be FIRST message so the prefix is always the same for prompt caching.
 
-KNOWLEDGE_BASE = "База знаний не загружена."
-for _p in _search_paths:
-    if _p.exists():
-        KNOWLEDGE_BASE = _p.read_text(encoding="utf-8")
-        break
-
-
-def build_system_prompt(assistant_name: str, seller_name: str, has_seller_link: bool) -> str:
-    if has_seller_link:
-        link_block = """
-## ССЫЛКА ДЛЯ ЗАКАЗА (КРИТИЧЕСКИ ВАЖНО):
-- Когда клиент готов к покупке или просит ссылку — напиши РОВНО текст [ССЫЛКА] (в квадратных скобках).
-- НЕ ПРИДУМЫВАЙ URL. НЕ ПИШИ никаких ссылок, адресов, URL. Только [ССЫЛКА].
-- Система АВТОМАТИЧЕСКИ заменит [ССЫЛКА] на настоящий URL.
-- Пример ответа: «Вот ссылка для заказа: [ССЫЛКА]»"""
-    else:
-        link_block = """
-## ССЫЛКА ДЛЯ ЗАКАЗА:
-Ссылка для заказа не настроена. Если клиент просит ссылку — скажи что нужно обратиться к продавцу напрямую. НИКОГДА не придумывай ссылки и URL."""
-
-    return f"""Ты — {assistant_name}, персональный консультант по продуктам FitLine (PM-International).
+STATIC_PROMPT = """Ты — персональный консультант по продуктам FitLine (PM-International).
 
 Твоя миссия — стать доверенным другом, который заботится о здоровье собеседника, и МЯГКО подвести к покупке через Оптимальный Сет.
 
@@ -92,24 +69,57 @@ def build_system_prompt(assistant_name: str, seller_name: str, has_seller_link: 
 - КОРОТКО: 2-4 предложения. Больше только если клиент просит подробности.
 - Без markdown (без **, __, - списков). Обычный текст для Telegram.
 - Заканчивай вопросом или мягким призывом к действию.
-- НЕ будь навязчивым. Если человек говорит «нет» — отступи с достоинством.
+- НЕ будь навязчивым. Если человек говорит «нет» — отступи с достоинством."""
+
+
+def build_dynamic_prompt(
+    assistant_name: str,
+    seller_name: str,
+    has_seller_link: bool,
+    relevant_kb: str,
+) -> str:
+    """Build the per-request dynamic prompt with personalization + relevant KB."""
+    if has_seller_link:
+        link_block = """## ССЫЛКА ДЛЯ ЗАКАЗА (КРИТИЧЕСКИ ВАЖНО):
+- Когда клиент готов к покупке или просит ссылку — напиши РОВНО текст [ССЫЛКА] (в квадратных скобках).
+- НЕ ПРИДУМЫВАЙ URL. НЕ ПИШИ никаких ссылок, адресов, URL. Только [ССЫЛКА].
+- Система АВТОМАТИЧЕСКИ заменит [ССЫЛКА] на настоящий URL.
+- Пример ответа: «Вот ссылка для заказа: [ССЫЛКА]»"""
+    else:
+        link_block = """## ССЫЛКА ДЛЯ ЗАКАЗА:
+Ссылка для заказа не настроена. Если клиент просит ссылку — скажи что нужно обратиться к продавцу напрямую. НИКОГДА не придумывай ссылки и URL."""
+
+    return f"""## ПЕРСОНАЛИЗАЦИЯ:
+Твоё имя: {assistant_name}
 
 {link_block}
 
 <knowledge_base>
-{KNOWLEDGE_BASE}
+{relevant_kb}
 </knowledge_base>"""
 
 
 async def get_ai_response(
-    system_prompt: str,
+    assistant_name: str,
+    seller_name: str,
+    has_seller_link: bool,
     chat_history: list[dict],
     user_message: str,
 ) -> str:
-    messages = [{"role": "developer", "content": system_prompt}]
+    """Get AI response with RAG-selected knowledge base and prompt caching."""
+    # RAG: select only relevant KB sections
+    relevant_kb = select_relevant_kb(user_message, chat_history)
+    dynamic = build_dynamic_prompt(assistant_name, seller_name, has_seller_link, relevant_kb)
 
-    # Keep last 20 messages for context window management
-    for msg in chat_history[-20:]:
+    messages = [
+        # Message 1: static prompt — CACHED by OpenAI (identical across all requests)
+        {"role": "developer", "content": STATIC_PROMPT},
+        # Message 2: dynamic prompt — personalization + relevant KB (small, per-request)
+        {"role": "developer", "content": dynamic},
+    ]
+
+    # Chat history (last 10 messages)
+    for msg in chat_history[-10:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
 
     messages.append({"role": "user", "content": user_message})
