@@ -226,18 +226,8 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         return await handler(event, data)
 
     @dp.errors()
-    async def on_error(event, exception):
-        logger.error(f"[BOT#{bot_db_id}] Handler error: {exception}", exc_info=True)
-        return True
-
-    @dp.update.outer_middleware()
-    async def log_all_updates(handler, event, data):
-        logger.info(f"[BOT#{bot_db_id}] Update received: type={event.event_type}")
-        return await handler(event, data)
-
-    @dp.errors()
-    async def on_error(event, exception):
-        logger.error(f"[BOT#{bot_db_id}] Handler error: {exception}", exc_info=True)
+    async def on_error(event: types.ErrorEvent):
+        logger.error(f"[BOT#{bot_db_id}] Handler error: {event.exception}", exc_info=True)
         return True
 
     @dp.message(CommandStart())
