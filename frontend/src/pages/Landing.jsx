@@ -131,13 +131,13 @@ function Hero() {
             {/* Metrics */}
             <div className="flex items-center gap-8 text-sm">
               <div>
-                <div className="text-2xl font-display font-bold text-white"><AnimatedNumber value="7" /></div>
-                <div className="text-white/40 mt-1">ботов работают</div>
+                <div className="text-2xl font-display font-bold text-white">Личный</div>
+                <div className="text-white/40 mt-1">ИИ-ассистент</div>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
-                <div className="text-2xl font-display font-bold text-white"><AnimatedNumber value="1200" suffix="+" /></div>
-                <div className="text-white/40 mt-1">сообщений в месяц</div>
+                <div className="text-2xl font-display font-bold text-white"><AnimatedNumber value="100" suffix="+" /></div>
+                <div className="text-white/40 mt-1">клиентов в день</div>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
@@ -165,11 +165,11 @@ function Hero() {
                   </div>
                 </div>
                 <div className="space-y-3 pt-4">
-                  <ChatBubble from="bot" text="Привет! Я ассистент Анны по продукции FitLine. Чем могу помочь?" delay={0} />
-                  <ChatBubble from="user" text="Расскажи, что такое FitLine?" delay={1} />
-                  <ChatBubble from="bot" text="FitLine — линейка продуктов для здоровья от PM-International (Германия, с 1993). Все продукты на технологии NTC — усвоение до 5 раз быстрее." delay={2} />
-                  <ChatBubble from="user" text="Усталость и плохой сон" delay={3} />
-                  <ChatBubble from="bot" text="Рекомендую FitLine Restorate — восстанавливает баланс, улучшает сон. Хотите попробовать? Анна лично поможет с заказом!" delay={4} />
+                  <ChatBubble from="bot" text="Привет! Я ассистент Анны 👋 Расскажи, что хочется улучшить в самочувствии?" delay={0} />
+                  <ChatBubble from="user" text="Постоянно устаю, к вечеру сил вообще нет" delay={1} />
+                  <ChatBubble from="bot" text="Знакомо! Представь — утром встаёшь и реально чувствуешь бодрость без кофе, а сил хватает до вечера. Оптимальный Сет FitLine именно для этого. Хочешь расскажу подробнее?" delay={2} />
+                  <ChatBubble from="user" text="Да, расскажи" delay={3} />
+                  <ChatBubble from="bot" text="Это два продукта — утром и вечером. 1000+ профессиональных спортсменов пьют это каждый день. Хочешь попробовать? Скину ссылку для заказа 🙌" delay={4} />
                 </div>
                 {/* Input mockup */}
                 <div className="mt-4 flex items-center gap-2 bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
@@ -299,9 +299,9 @@ function Features() {
 function HowItWorks() {
   const [ref, isInView] = useInView()
   const steps = [
-    { icon: Plug, num: '01', title: 'Зарегистрируйтесь', desc: 'Создайте аккаунт за 30 секунд — email и пароль' },
-    { icon: Settings2, num: '02', title: 'Подключите бота', desc: 'Создайте бота в @BotFather и вставьте токен в личном кабинете' },
-    { icon: MessageSquare, num: '03', title: 'Получайте клиентов', desc: 'Бот уже знает всё о FitLine и работает от вашего имени' },
+    { icon: Users, num: '01', title: 'Регистрация за 30 секунд', desc: 'Email, пароль — и вы уже в личном кабинете' },
+    { icon: Sparkles, num: '02', title: 'Настройте ассистента', desc: 'Укажите имя, загрузите аватарку и ваш бот готов к работе' },
+    { icon: Send, num: '03', title: 'Делитесь ссылкой', desc: 'Отправляйте ссылку клиентам — бот проконсультирует, подберёт продукт и передаст вам готового покупателя' },
   ]
 
   return (
