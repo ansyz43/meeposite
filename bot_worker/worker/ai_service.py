@@ -124,7 +124,7 @@ async def get_ai_response(
     messages.append({"role": "user", "content": user_message})
 
     response = await client.chat.completions.create(
-        model="gpt-5.4",
+        model="openai/gpt-5.4",
         messages=messages,
         max_completion_tokens=4096,
     )
