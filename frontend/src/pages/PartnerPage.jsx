@@ -214,7 +214,7 @@ function VisualTree({ tree, userName }) {
         {/* Background glow */}
         <defs>
           <radialGradient id="treeGlow">
-            <stop offset="0%" stopColor="rgba(99,102,241,0.08)" />
+            <stop offset="0%" stopColor="rgba(16,185,129,0.08)" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>

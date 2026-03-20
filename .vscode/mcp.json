@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "@21st-dev/magic": {
+      "command": "npx",
+      "args": ["-y", "@21st-dev/magic@latest"],
+      "env": {
+        "API_KEY": "an_sk_17fd673dc8d2c20ebd0bad646173124f7b24c2ded7ae941be5c611e783ea8fae"
+      }
+    }
+  }
+}

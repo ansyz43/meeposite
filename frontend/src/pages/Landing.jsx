@@ -28,7 +28,7 @@ function Hero() {
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
           Ваш ИИ-ассистент, который продаёт{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-purple-400">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
             FitLine за вас 24/7
           </span>
         </h1>
@@ -237,7 +237,7 @@ function CTA() {
   return (
     <section className="py-20 px-6">
       <div className="max-w-3xl mx-auto text-center">
-        <div className="glass-card p-12 bg-gradient-to-br from-accent-500/10 to-purple-500/10 border-accent-500/20">
+        <div className="glass-card p-12 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Готовы начать?</h2>
           <p className="text-white/60 mb-8">Подключите бота за 5 минут и пусть он работает за вас</p>
           <Link to="/register" className="btn-primary text-lg inline-flex items-center gap-2">

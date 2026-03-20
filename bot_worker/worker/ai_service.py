@@ -9,8 +9,7 @@ from worker.rag import select_relevant_kb
 
 logger = logging.getLogger(__name__)
 
-PRIMARY_MODEL = "openai/gpt-5.4"
-FALLBACK_MODEL = "google/gemini-2.5-flash"
+MODEL = "gpt-5.4"
 
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
@@ -153,7 +152,7 @@ async def get_ai_response(
     chat_history: list[dict],
     user_message: str,
 ) -> str:
-    """Get AI response with RAG-selected knowledge base, circuit breaker, and fallback model."""
+    """Get AI response with RAG-selected knowledge base and circuit breaker."""
     if _cb.is_open:
         raise RuntimeError("Circuit breaker open — AI service temporarily unavailable")
 
@@ -171,38 +170,31 @@ async def get_ai_response(
 
     messages.append({"role": "user", "content": user_message})
 
-    # Try primary model, then fallback
-    for model in (PRIMARY_MODEL, FALLBACK_MODEL):
-        try:
-            response = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_completion_tokens=4096,
+    try:
+        response = await client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            max_completion_tokens=4096,
+        )
+
+        content = response.choices[0].message.content
+        if not content:
+            logger.error(f"[{MODEL}] returned empty content")
+            _cb.record_failure()
+            raise RuntimeError("AI returned empty response")
+
+        _cb.record_success()
+
+        if response.usage:
+            prompt_t = response.usage.prompt_tokens
+            compl_t = response.usage.completion_tokens
+            total_t = response.usage.total_tokens
+            cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
+            logger.info(
+                f"[{MODEL}] Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}"
             )
 
-            content = response.choices[0].message.content
-            if not content:
-                logger.warning(f"[{model}] returned empty content, trying next model")
-                continue
-
-            _cb.record_success()
-
-            if response.usage:
-                prompt_t = response.usage.prompt_tokens
-                compl_t = response.usage.completion_tokens
-                total_t = response.usage.total_tokens
-                cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
-                logger.info(
-                    f"[{model}] Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}"
-                )
-
-            return content
-        except Exception as e:
-            logger.warning(f"Model {model} failed: {e}")
-            if model == FALLBACK_MODEL:
-                _cb.record_failure()
-                raise
-
-    # All models returned empty — return error message
-    logger.error("All models returned empty content")
-    return "Извините, произошла ошибка. Попробуйте ещё раз."
+        return content
+    except Exception as e:
+        _cb.record_failure()
+        raise
