@@ -179,6 +179,12 @@ async def get_ai_response(
                 messages=messages,
                 max_completion_tokens=4096,
             )
+
+            content = response.choices[0].message.content
+            if not content:
+                logger.warning(f"[{model}] returned empty content, trying next model")
+                continue
+
             _cb.record_success()
 
             if response.usage:
@@ -190,11 +196,13 @@ async def get_ai_response(
                     f"[{model}] Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}"
                 )
 
-            return response.choices[0].message.content or "Извините, произошла ошибка. Попробуйте ещё раз."
+            return content
         except Exception as e:
             logger.warning(f"Model {model} failed: {e}")
             if model == FALLBACK_MODEL:
                 _cb.record_failure()
                 raise
 
-    raise RuntimeError("All models failed")
+    # All models returned empty — return error message
+    logger.error("All models returned empty content")
+    return "Извините, произошла ошибка. Попробуйте ещё раз."

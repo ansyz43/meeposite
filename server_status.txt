@@ -1,0 +1,36 @@
+CONTAINER ID   IMAGE                  COMMAND                  CREATED       STATUS                     PORTS                                         NAMES
+7533645a2a6b   postgres:16-alpine     "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)       5432/tcp                                      meeposite-db-1
+ca6ebeaedbb7   meeposite-backend      "gunicorn app.main:a…"   2 hours ago   Up 2 hours                 0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   meeposite-backend-1
+2be799c9b88e   meeposite-bot_worker   "python -m worker.ma…"   3 hours ago   Up 2 hours                                                               meeposite-bot_worker-1
+31f4c8490a8c   nginx:alpine           "/docker-entrypoint.…"   6 hours ago   Exited (0) 2 hours ago                                                   meeposite-nginx-1
+0fd38231f491   meeposite-frontend     "docker-entrypoint.s…"   6 hours ago   Exited (128) 2 hours ago                                                 meeposite-frontend-1
+2026-03-20 11:00:13,157 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:00:23,160 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:00:33,172 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:00:43,184 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:00:53,188 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:03,193 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:13,206 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:23,218 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:33,231 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:43,245 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:01:53,255 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:02:03,264 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:02:13,272 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:02:23,285 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+2026-03-20 11:02:33,293 [ERROR] Sync error: [Errno -3] Temporary failure in name resolution
+[2026-03-20 09:15:15 +0000] [7] [INFO] Started server process [7]
+[2026-03-20 09:15:15 +0000] [7] [INFO] Waiting for application startup.
+[2026-03-20 09:15:15 +0000] [8] [INFO] Started server process [8]
+[2026-03-20 09:15:15 +0000] [8] [INFO] Waiting for application startup.
+[2026-03-20 09:15:16 +0000] [9] [INFO] Started server process [9]
+[2026-03-20 09:15:16 +0000] [9] [INFO] Waiting for application startup.
+[2026-03-20 09:15:16 +0000] [8] [INFO] Application startup complete.
+[2026-03-20 09:15:16 +0000] [7] [INFO] Application startup complete.
+[2026-03-20 09:15:16 +0000] [9] [INFO] Application startup complete.
+[2026-03-20 09:15:16 +0000] [10] [INFO] Started server process [10]
+[2026-03-20 09:15:16 +0000] [10] [INFO] Waiting for application startup.
+[2026-03-20 09:15:16 +0000] [10] [INFO] Application startup complete.
+[2026-03-20 09:25:37 +0000] [9] [WARNING] Invalid HTTP request received.
+[2026-03-20 10:10:01 +0000] [10] [WARNING] Invalid HTTP request received.
+[2026-03-20 10:50:31 +0000] [10] [WARNING] Invalid HTTP request received.

@@ -1,0 +1,30 @@
+2026-03-20 11:13:54,119 [INFO] Meepo Bot Worker starting...
+2026-03-20 11:13:54,209 [INFO] Active bots: 7
+2026-03-20 11:13:54,222 [INFO] Starting bot #1 (@FLkador_bot)
+2026-03-20 11:13:54,222 [INFO] Start polling
+2026-03-20 11:13:54,232 [INFO] Starting bot #6 (@fitline03bot)
+2026-03-20 11:13:54,233 [INFO] Start polling
+2026-03-20 11:13:54,243 [INFO] Starting bot #2 (@testingfitl_bot)
+2026-03-20 11:13:54,244 [INFO] Start polling
+2026-03-20 11:13:54,257 [INFO] Starting bot #3 (@meepofl_bot)
+2026-03-20 11:13:54,257 [INFO] Start polling
+2026-03-20 11:13:54,268 [INFO] Starting bot #4 (@fitline05bot)
+2026-03-20 11:13:54,268 [INFO] Start polling
+2026-03-20 11:13:54,280 [INFO] Starting bot #5 (@fitline04bot)
+2026-03-20 11:13:54,280 [INFO] Start polling
+2026-03-20 11:13:54,290 [INFO] Starting bot #7 (@fitline02bot)
+2026-03-20 11:13:54,290 [INFO] Start polling
+2026-03-20 11:13:54,438 [INFO] Run polling for bot @fitline03bot id=8626436578 - 'Ассистент Инна'
+2026-03-20 11:13:54,440 [INFO] Run polling for bot @FLkador_bot id=8660411537 - 'Ассистент вася'
+2026-03-20 11:13:54,441 [INFO] Run polling for bot @fitline04bot id=8701521247 - 'Ассистент Bulat'
+2026-03-20 11:13:54,442 [INFO] Run polling for bot @fitline05bot id=8679201391 - 'Ассистент Сергей'
+2026-03-20 11:13:54,442 [INFO] Run polling for bot @meepofl_bot id=8737135150 - 'Ассистент пуПС'
+2026-03-20 11:13:54,476 [INFO] Run polling for bot @testingfitl_bot id=8726353391 - 'Ассистент Test'
+2026-03-20 11:13:54,480 [INFO] Run polling for bot @fitline02bot id=8654750199 - 'meepobot'
+2026-03-20 11:14:04,226 [INFO] Active bots: 7
+2026-03-20 11:14:14,236 [INFO] Active bots: 7
+2026-03-20 11:14:24,249 [INFO] Active bots: 7
+2026-03-20 11:14:34,262 [INFO] Active bots: 7
+2026-03-20 11:14:44,273 [INFO] Active bots: 7
+2026-03-20 11:14:54,286 [INFO] Active bots: 7
+2026-03-20 11:15:04,302 [INFO] Active bots: 7
