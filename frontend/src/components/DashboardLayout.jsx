@@ -52,10 +52,7 @@ export default function DashboardLayout() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-glow">
               <Bot size={18} className="text-white" />
             </div>
-            <div>
-              <div className="font-display font-bold text-sm gradient-text">Meepo</div>
-              <div className="text-[11px] text-white/30 truncate max-w-[120px]">{user?.name}</div>
-            </div>
+            <div className="font-display font-bold text-sm gradient-text">Meepo</div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-white/30 hover:text-white transition-colors">
             <X size={18} />
@@ -90,11 +87,20 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="p-3 border-t border-white/[0.06]">
+        {/* User info + Logout */}
+        <div className="p-3 border-t border-white/[0.06] space-y-2">
+          <div className="flex items-center gap-3 px-3.5 py-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-medium text-white/70 truncate">{user?.name || 'Пользователь'}</div>
+              <div className="text-[11px] text-white/25 truncate">{user?.email}</div>
+            </div>
+          </div>
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] text-white/30 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200 w-full cursor-pointer"
+            className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-[13px] text-white/30 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200 w-full cursor-pointer"
           >
             <LogOut size={17} />
             Выйти

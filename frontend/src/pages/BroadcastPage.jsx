@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../api'
 import { Send, Image, Clock, CheckCircle, AlertCircle, Megaphone } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import Loader from '../components/ui/Loader'
+import Modal from '../components/ui/Modal'
 
 export default function BroadcastPage() {
   const [broadcasts, setBroadcasts] = useState([])
@@ -10,6 +13,7 @@ export default function BroadcastPage() {
   const [bcSending, setBcSending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
   const bcFileRef = useRef(null)
 
   useEffect(() => { loadBroadcasts() }, [])
@@ -23,8 +27,7 @@ export default function BroadcastPage() {
   }
 
   async function sendBroadcast() {
-    if (!bcText.trim()) return
-    if (!confirm(`Отправить рассылку всем контактам бота?\n\n"${bcText.trim().substring(0, 100)}..."`)) return
+    setShowConfirm(false)
     setBcSending(true)
     setError('')
     try {
@@ -55,16 +58,11 @@ export default function BroadcastPage() {
     return () => clearInterval(t)
   }, [broadcasts])
 
-  if (loading) return (
-    <div className="flex items-center gap-3 text-white/40">
-      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
-      Загрузка...
-    </div>
-  )
+  if (loading) return <Loader />
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold mb-8">Рассылка</h1>
+      <PageHeader title="Рассылка" subtitle="Отправьте сообщение всем контактам бота" />
 
       {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
       {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
@@ -99,9 +97,11 @@ export default function BroadcastPage() {
               onChange={e => setBcImage(e.target.files?.[0] || null)} />
           </div>
           <div className="pt-2">
-            <button onClick={sendBroadcast} disabled={bcSending || !bcText.trim()}
+            <button onClick={() => setShowConfirm(true)} disabled={bcSending || !bcText.trim()}
               className="btn-primary flex items-center gap-2 disabled:opacity-50">
-              <Send size={18} /> {bcSending ? 'Отправка...' : 'Отправить всем'}
+              <span className="relative z-10 flex items-center gap-2">
+                <Send size={18} /> {bcSending ? 'Отправка...' : 'Отправить всем'}
+              </span>
             </button>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function BroadcastPage() {
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
           <Megaphone size={20} className="text-emerald-400" />
-          <h2 className="font-semibold">История рассылок</h2>
+          <h2 className="font-display font-semibold">История рассылок</h2>
         </div>
 
         {broadcasts.length === 0 ? (
@@ -172,6 +172,31 @@ export default function BroadcastPage() {
           </div>
         )}
       </div>
+
+      {/* Confirm Modal */}
+      <Modal
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title="Отправить рассылку?"
+        actions={
+          <>
+            <button onClick={() => setShowConfirm(false)} className="btn-secondary !py-2 !px-5 text-sm">Отмена</button>
+            <button onClick={sendBroadcast} className="btn-primary !py-2 !px-5 text-sm">
+              <span className="relative z-10 flex items-center gap-2">
+                <Send size={14} /> Отправить
+              </span>
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p>Сообщение будет отправлено всем контактам бота.</p>
+          <div className="bg-white/[0.04] rounded-xl p-3 text-white/70 text-sm max-h-32 overflow-y-auto whitespace-pre-wrap">
+            {bcText.trim().substring(0, 300)}{bcText.trim().length > 300 ? '...' : ''}
+          </div>
+          {bcImage && <p className="text-xs text-white/40">📷 С картинкой: {bcImage.name}</p>}
+        </div>
+      </Modal>
     </div>
   )
 }

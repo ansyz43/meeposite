@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
-import { Bot, ArrowRight } from 'lucide-react'
+import { Bot, ArrowRight, Store } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import Loader from '../components/ui/Loader'
+import EmptyState from '../components/ui/EmptyState'
 
 export default function CatalogPage() {
   const [bots, setBots] = useState([])
@@ -47,82 +50,75 @@ export default function CatalogPage() {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
   }, [success])
 
-  if (loading) return (
-    <div className="flex items-center gap-3 text-white/40">
-      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
-      Загрузка...
-    </div>
-  )
+  if (loading) return <Loader />
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold mb-2">Каталог ботов</h1>
-      <p className="text-white/50 mb-8">Выберите бота, чтобы стать его партнёром и получить реферальную ссылку</p>
+      <PageHeader title="Каталог ботов" subtitle="Выберите бота, чтобы стать его партнёром" />
 
       {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
       {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
 
       {bots.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <Bot size={40} className="text-white/20 mx-auto mb-4" />
-          <p className="text-white/50">Пока нет доступных ботов для партнёрства</p>
-        </div>
+        <EmptyState icon={Store} title="Нет доступных ботов" description="Пока нет ботов, которые принимают партнёров" />
       ) : (
-        <div className="grid gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {bots.map(bot => (
             <div
               key={bot.id}
-              onClick={() => setSelectedBot(bot)}
-              className={`glass-card p-5 cursor-pointer transition-all ${
+              onClick={() => setSelectedBot(selectedBot?.id === bot.id ? null : bot)}
+              className={`glass-card p-5 cursor-pointer transition-all duration-300 ${
                 selectedBot?.id === bot.id
-                  ? 'border-emerald-500/50 bg-emerald-500/5'
-                  : 'hover:bg-white/5'
+                  ? 'border-emerald-500/50 bg-emerald-500/[0.06] shadow-[0_0_30px_rgba(16,185,129,0.08)]'
+                  : 'hover:bg-white/[0.04]'
               }`}
             >
               <div className="flex items-center gap-4">
                 {bot.avatar_url ? (
                   <img src={bot.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center">
-                    <Bot size={24} className="text-white/30" />
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center">
+                    <Bot size={24} className="text-emerald-400" />
                   </div>
                 )}
-                <div className="flex-1">
-                  <div className="font-medium">{bot.assistant_name}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{bot.assistant_name}</div>
                   {bot.bot_username && (
-                    <div className="text-sm text-white/40">@{bot.bot_username}</div>
+                    <div className="text-sm text-white/35">@{bot.bot_username}</div>
                   )}
                 </div>
                 {selectedBot?.id === bot.id && (
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
                 )}
               </div>
+
+              {/* Inline form */}
+              {selectedBot?.id === bot.id && (
+                <form onSubmit={becomePartner} className="mt-5 pt-5 border-t border-white/[0.06] space-y-4" onClick={e => e.stopPropagation()}>
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1.5">Ваша ссылка продавца</label>
+                    <input
+                      type="url"
+                      value={sellerLink}
+                      onChange={e => setSellerLink(e.target.value)}
+                      className="input-field !py-2.5"
+                      placeholder="https://your-seller-link.com"
+                      required
+                    />
+                    <p className="text-xs text-white/30 mt-1">Бот будет давать эту ссылку вашим клиентам</p>
+                  </div>
+                  <button type="submit" disabled={creating} className="btn-primary flex items-center gap-2 disabled:opacity-50 w-full justify-center">
+                    <span className="relative z-10 flex items-center gap-2">
+                      <ArrowRight size={16} /> {creating ? 'Создание...' : 'Стать партнёром'}
+                    </span>
+                  </button>
+                </form>
+              )}
             </div>
           ))}
         </div>
-      )}
-
-      {selectedBot && (
-        <form onSubmit={becomePartner} className="glass-card p-6 space-y-5">
-          <h2 className="font-semibold">Стать партнёром — {selectedBot.assistant_name}</h2>
-          <div>
-            <label className="block text-sm text-white/60 mb-1.5">Ваша ссылка продавца</label>
-            <input
-              type="url"
-              value={sellerLink}
-              onChange={e => setSellerLink(e.target.value)}
-              className="input-field"
-              placeholder="https://your-seller-link.com"
-              required
-            />
-            <p className="text-xs text-white/30 mt-1">Бот будет давать эту ссылку вашим клиентам</p>
-          </div>
-          <button type="submit" disabled={creating} className="btn-primary flex items-center gap-2 disabled:opacity-50">
-            <ArrowRight size={18} /> {creating ? 'Создание...' : 'Стать партнёром'}
-          </button>
-        </form>
       )}
     </div>
   )
