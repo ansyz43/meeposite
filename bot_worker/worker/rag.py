@@ -12,13 +12,18 @@ from pathlib import Path
 # ─── Load knowledge base text ───
 
 def _load_kb_text() -> str:
-    for p in [
-        Path(__file__).parent.parent / "knowledge_base" / "fitline.txt",
-        Path(__file__).parent.parent.parent / "knowledge_base" / "fitline.txt",
-        Path("/app/knowledge_base/fitline.txt"),
+    """Load KB from all .txt files in knowledge_base directory."""
+    for base in [
+        Path(__file__).parent.parent / "knowledge_base",
+        Path(__file__).parent.parent.parent / "knowledge_base",
+        Path("/app/knowledge_base"),
     ]:
-        if p.exists():
-            return p.read_text(encoding="utf-8")
+        if base.is_dir():
+            parts = []
+            for p in sorted(base.glob("*.txt")):
+                parts.append(p.read_text(encoding="utf-8"))
+            if parts:
+                return "\n\n---\n\n".join(parts)
     return ""
 
 

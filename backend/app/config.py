@@ -1,4 +1,14 @@
+import sys
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+_INSECURE_DEFAULTS = {
+    "super-secret-key-change-in-production",
+    "changeme",
+    "secret",
+    "",
+}
 
 
 class Settings(BaseSettings):
@@ -13,7 +23,7 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     MAX_AVATAR_SIZE: int = 5 * 1024 * 1024  # 5 MB
 
-    COOKIE_SECURE: bool = False  # Set True in production with HTTPS
+    COOKIE_SECURE: bool | None = None  # Auto-detected from CORS_ORIGINS if not set
 
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
@@ -25,8 +35,24 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     TELEGRAM_BOT_TOKEN_LOGIN: str = ""
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
+
+    @model_validator(mode="after")
+    def _validate_secrets(self) -> "Settings":
+        if self.SECRET_KEY in _INSECURE_DEFAULTS:
+            print(
+                "FATAL: SECRET_KEY is not set or uses a default value. "
+                "Set a strong SECRET_KEY in .env before starting.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        # Auto-detect COOKIE_SECURE from CORS_ORIGINS
+        if self.COOKIE_SECURE is None:
+            self.COOKIE_SECURE = any(
+                o.strip().startswith("https://")
+                for o in self.CORS_ORIGINS.split(",")
+            )
+        return self
 
 
 settings = Settings()

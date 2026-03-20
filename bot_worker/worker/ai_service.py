@@ -1,4 +1,5 @@
 import logging
+import time
 
 import httpx
 from openai import AsyncOpenAI
@@ -8,12 +9,55 @@ from worker.rag import select_relevant_kb
 
 logger = logging.getLogger(__name__)
 
+PRIMARY_MODEL = "openai/gpt-5.4"
+FALLBACK_MODEL = "google/gemini-2.5-flash"
+
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
     base_url=settings.OPENAI_BASE_URL or None,
     timeout=httpx.Timeout(60.0, connect=10.0),
     max_retries=2,
 )
+
+
+# ─── Simple circuit breaker ───
+
+class _CircuitBreaker:
+    """Track consecutive failures; open circuit after threshold."""
+    __slots__ = ("_failures", "_max_failures", "_reset_after", "_opened_at")
+
+    def __init__(self, max_failures: int = 5, reset_after: float = 60.0):
+        self._failures = 0
+        self._max_failures = max_failures
+        self._reset_after = reset_after
+        self._opened_at: float = 0.0
+
+    @property
+    def is_open(self) -> bool:
+        if self._failures < self._max_failures:
+            return False
+        # Auto-reset after cooldown
+        if time.monotonic() - self._opened_at > self._reset_after:
+            self.reset()
+            return False
+        return True
+
+    def record_failure(self) -> None:
+        self._failures += 1
+        if self._failures >= self._max_failures:
+            self._opened_at = time.monotonic()
+            logger.warning("Circuit breaker OPEN — too many AI failures")
+
+    def record_success(self) -> None:
+        if self._failures > 0:
+            self._failures = 0
+
+    def reset(self) -> None:
+        self._failures = 0
+        self._opened_at = 0.0
+
+
+_cb = _CircuitBreaker()
 
 # ─── Static prompt (CACHED by OpenAI — identical across all bots/messages) ───
 # Must be FIRST message so the prefix is always the same for prompt caching.
@@ -109,37 +153,48 @@ async def get_ai_response(
     chat_history: list[dict],
     user_message: str,
 ) -> str:
-    """Get AI response with RAG-selected knowledge base and prompt caching."""
+    """Get AI response with RAG-selected knowledge base, circuit breaker, and fallback model."""
+    if _cb.is_open:
+        raise RuntimeError("Circuit breaker open — AI service temporarily unavailable")
+
     # RAG: select only relevant KB sections
     relevant_kb = select_relevant_kb(user_message, chat_history)
     dynamic = build_dynamic_prompt(assistant_name, seller_name, has_seller_link, relevant_kb)
 
     messages = [
-        # Message 1: static prompt — CACHED by OpenAI (identical across all requests)
         {"role": "developer", "content": STATIC_PROMPT},
-        # Message 2: dynamic prompt — personalization + relevant KB (small, per-request)
         {"role": "developer", "content": dynamic},
     ]
 
-    # Chat history (last 10 messages)
     for msg in chat_history[-10:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
 
     messages.append({"role": "user", "content": user_message})
 
-    response = await client.chat.completions.create(
-        model="openai/gpt-5.4",
-        messages=messages,
-        max_completion_tokens=4096,
-    )
+    # Try primary model, then fallback
+    for model in (PRIMARY_MODEL, FALLBACK_MODEL):
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_completion_tokens=4096,
+            )
+            _cb.record_success()
 
-    # Log token usage for cost tracking
-    if response.usage:
-        prompt_t = response.usage.prompt_tokens
-        compl_t = response.usage.completion_tokens
-        total_t = response.usage.total_tokens
-        # openai/gpt-5.4 pricing: $2.50/1M input, $15/1M output
-        cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
-        logger.info(f"Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}")
+            if response.usage:
+                prompt_t = response.usage.prompt_tokens
+                compl_t = response.usage.completion_tokens
+                total_t = response.usage.total_tokens
+                cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
+                logger.info(
+                    f"[{model}] Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}"
+                )
 
-    return response.choices[0].message.content or "Извините, произошла ошибка. Попробуйте ещё раз."
+            return response.choices[0].message.content or "Извините, произошла ошибка. Попробуйте ещё раз."
+        except Exception as e:
+            logger.warning(f"Model {model} failed: {e}")
+            if model == FALLBACK_MODEL:
+                _cb.record_failure()
+                raise
+
+    raise RuntimeError("All models failed")

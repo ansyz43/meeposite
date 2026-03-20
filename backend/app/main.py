@@ -1,4 +1,5 @@
 import os
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -9,20 +10,37 @@ from sqlalchemy import text
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
 
 from app.config import settings
 from app.database import engine, Base
+from app.logging_config import setup_logging, RequestIDMiddleware
 from app.routers import auth, profile, bot, conversations, referral, broadcast
 
+setup_logging()
+logger = logging.getLogger(__name__)
 
 limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Run Alembic migrations on startup
+    alembic_cfg = AlembicConfig(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini")
+    )
+    alembic_cfg.set_main_option(
+        "script_location",
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic"),
+    )
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    try:
+        alembic_command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations applied successfully")
+    except Exception:
+        logger.exception("Failed to apply database migrations")
+        raise
     yield
 
 
@@ -46,6 +64,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIDMiddleware)
 
 # Static files for uploads
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

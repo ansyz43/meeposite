@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = ""
     PROXY_SECRET: str = ""
     TELEGRAM_API_URL: str = ""
+    SECRET_KEY: str = "super-secret-key-change-in-production"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 
 settings = Settings()

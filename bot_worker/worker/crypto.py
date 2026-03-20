@@ -1,12 +1,12 @@
 import base64
 import hashlib
-import os
 from cryptography.fernet import Fernet
+
+from worker.config import settings
 
 
 def _get_fernet() -> Fernet:
-    secret = os.environ.get("SECRET_KEY", "super-secret-key-change-in-production")
-    key = hashlib.sha256(secret.encode()).digest()
+    key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(key))
 
 
