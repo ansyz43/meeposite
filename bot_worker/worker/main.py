@@ -13,6 +13,8 @@ import time
 from collections import OrderedDict
 
 from aiogram import Bot, Dispatcher, types, F
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 from aiogram.filters import CommandStart
 from sqlalchemy import select, update, func
 
@@ -370,7 +372,12 @@ async def start_bot(bot_record: BotModel, seller_name: str):
     while True:
         try:
             token = decrypt_token(bot_record.bot_token_encrypted)
-            bot = Bot(token=token)
+            if settings.TELEGRAM_API_URL:
+                tg_server = TelegramAPIServer.from_base(settings.TELEGRAM_API_URL)
+                session = AiohttpSession(api=tg_server)
+                bot = Bot(token=token, session=session)
+            else:
+                bot = Bot(token=token)
             dp = create_dispatcher(
                 bot_db_id=bot_record.id,
                 assistant_name=bot_record.assistant_name,

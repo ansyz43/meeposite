@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""
     PROXY_SECRET: str = ""
+    TELEGRAM_API_URL: str = ""
 
     class Config:
         env_file = ".env"
