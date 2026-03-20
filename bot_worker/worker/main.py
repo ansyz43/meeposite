@@ -222,6 +222,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
     @dp.message(CommandStart())
     async def handle_start(message: types.Message):
+        logger.info(f"[BOT#{bot_db_id}] /start from user {message.from_user.id}")
         if _is_duplicate(message.chat.id, message.message_id):
             return
         async with async_session() as db:
@@ -299,6 +300,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
     @dp.message(F.text)
     async def handle_message(message: types.Message):
+        logger.info(f"[BOT#{bot_db_id}] Message from user {message.from_user.id}: {message.text[:50]}")
         if _is_duplicate(message.chat.id, message.message_id):
             return
         async with async_session() as db:
@@ -388,7 +390,7 @@ async def start_bot(bot_record: BotModel, seller_name: str):
 
             logger.info(f"Starting bot #{bot_record.id} (@{bot_record.bot_username})")
             retry_delay = 5  # reset on successful connect
-            await dp.start_polling(bot, handle_signals=False)
+            await dp.start_polling(bot, handle_signals=False, polling_timeout=15)
         except asyncio.CancelledError:
             logger.info(f"Bot #{bot_record.id} stopped")
             return
