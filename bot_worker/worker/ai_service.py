@@ -1,8 +1,12 @@
+import logging
+
 import httpx
 from openai import AsyncOpenAI
 
 from worker.config import settings
 from worker.rag import select_relevant_kb
+
+logger = logging.getLogger(__name__)
 
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
@@ -128,5 +132,14 @@ async def get_ai_response(
         messages=messages,
         max_completion_tokens=4096,
     )
+
+    # Log token usage for cost tracking
+    if response.usage:
+        prompt_t = response.usage.prompt_tokens
+        compl_t = response.usage.completion_tokens
+        total_t = response.usage.total_tokens
+        # openai/gpt-5.4 pricing: $2.50/1M input, $15/1M output
+        cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
+        logger.info(f"Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}")
 
     return response.choices[0].message.content or "Извините, произошла ошибка. Попробуйте ещё раз."

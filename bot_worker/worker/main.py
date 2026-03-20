@@ -92,7 +92,7 @@ async def get_or_create_contact(session, bot_id: int, tg_user: types.User) -> Co
         contact.telegram_username = tg_user.username
         contact.first_name = tg_user.first_name
         contact.last_name = tg_user.last_name
-        contact.last_message_at = datetime.datetime.utcnow()
+        contact.last_message_at = datetime.datetime.now(datetime.UTC)
         contact.message_count += 1
         await session.flush()
         return contact
@@ -103,7 +103,7 @@ async def get_or_create_contact(session, bot_id: int, tg_user: types.User) -> Co
         telegram_username=tg_user.username,
         first_name=tg_user.first_name,
         last_name=tg_user.last_name,
-        last_message_at=datetime.datetime.utcnow(),
+        last_message_at=datetime.datetime.now(datetime.UTC),
         message_count=1,
     )
     session.add(contact)
@@ -150,7 +150,7 @@ async def create_referral_session(session, partner_id: int, contact_id: int, tel
     if not result.scalar_one_or_none():
         return None
 
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     ref_session = ReferralSession(
         partner_id=partner_id,
         contact_id=contact_id,
@@ -167,7 +167,7 @@ async def create_referral_session(session, partner_id: int, contact_id: int, tel
 
 async def get_active_referral_session(session, bot_id: int, telegram_id: int):
     """Find an active, non-expired referral session for this telegram user on this bot."""
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     result = await session.execute(
         select(ReferralSession, ReferralPartner)
         .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)
@@ -343,21 +343,41 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             pass
 
         # AI call outside the DB session to free the connection
-        try:
-            async with _ai_semaphore:
-                ai_response = await asyncio.wait_for(
-                    get_ai_response(
-                        assistant_name, seller_name, bool(active_seller_link),
-                        history, user_text,
-                    ),
-                    timeout=60.0,
-                )
-        except asyncio.TimeoutError:
-            logger.error(f"AI timeout for bot #{bot_db_id}, contact #{contact.id}")
-            ai_response = "Извините, ответ занял слишком много времени. Попробуйте ещё раз."
-        except Exception as e:
-            logger.error(f"AI response error for bot #{bot_db_id}: {e}")
-            ai_response = "Извините, произошла временная ошибка. Попробуйте ещё раз через несколько секунд."
+        # Retry up to 3 times with backoff on transient errors
+        max_retries = 3
+        ai_response = None
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                async with _ai_semaphore:
+                    ai_response = await asyncio.wait_for(
+                        get_ai_response(
+                            assistant_name, seller_name, bool(active_seller_link),
+                            history, user_text,
+                        ),
+                        timeout=60.0,
+                    )
+                break  # success
+            except asyncio.TimeoutError:
+                last_error = "timeout"
+                logger.warning(f"[BOT#{bot_db_id}] AI timeout (attempt {attempt+1}/{max_retries})")
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"[BOT#{bot_db_id}] AI error (attempt {attempt+1}/{max_retries}): {e}", exc_info=True)
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 * (attempt + 1))  # 2s, 4s backoff
+                try:
+                    await message.answer_chat_action("typing")
+                except Exception:
+                    pass
+
+        if ai_response is None:
+            if last_error == "timeout":
+                logger.error(f"[BOT#{bot_db_id}] AI failed after {max_retries} retries: timeout")
+                ai_response = "Извините, ответ занял слишком много времени. Попробуйте ещё раз."
+            else:
+                logger.error(f"[BOT#{bot_db_id}] AI failed after {max_retries} retries: {last_error}")
+                ai_response = "Извините, произошла временная ошибка. Попробуйте ещё раз через несколько секунд."
 
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
