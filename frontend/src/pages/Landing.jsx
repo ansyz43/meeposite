@@ -20,8 +20,10 @@ function Navbar() {
 
 function Hero() {
   return (
-    <section className="pt-32 pb-20 px-6">
-      <div className="max-w-5xl mx-auto text-center">
+    <section className="pt-32 pb-20 px-6 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="max-w-5xl mx-auto text-center relative">
         <div className="inline-flex items-center gap-2 bg-accent-500/10 border border-accent-500/20 rounded-full px-4 py-1.5 mb-6">
           <Zap size={14} className="text-accent-400" />
           <span className="text-accent-400 text-sm font-medium">Платформа для дистрибьюторов FitLine</span>
@@ -123,8 +125,9 @@ function Solution() {
   ]
 
   return (
-    <section className="py-20 px-6 bg-dark-800/50">
-      <div className="max-w-5xl mx-auto">
+    <section className="py-20 px-6 bg-dark-800/50 relative">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="max-w-5xl mx-auto relative">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
           <span className="text-accent-400">Meepo</span> берёт это на себя
         </h2>
@@ -157,7 +160,7 @@ function HowItWorks() {
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((s, i) => (
             <div key={i} className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-accent-500/20 border border-accent-500/30 flex items-center justify-center text-2xl font-bold text-accent-400 mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-accent-500/20 border border-accent-500/30 flex items-center justify-center text-2xl font-bold text-accent-400 mx-auto mb-4 shadow-glow">
                 {s.num}
               </div>
               <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
@@ -182,8 +185,9 @@ function Advantages() {
   ]
 
   return (
-    <section className="py-20 px-6 bg-dark-800/50">
-      <div className="max-w-3xl mx-auto">
+    <section className="py-20 px-6 bg-dark-800/50 relative">
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="max-w-3xl mx-auto relative">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Почему Meepo</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           {items.map((item, i) => (

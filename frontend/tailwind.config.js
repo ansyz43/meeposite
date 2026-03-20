@@ -61,6 +61,19 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      boxShadow: {
+        'glow': '0 0 20px rgba(16, 185, 129, 0.15)',
+        'glow-lg': '0 0 40px rgba(16, 185, 129, 0.2)',
+      },
+      keyframes: {
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.4s ease-out both',
+      },
     },
   },
   plugins: [tailwindcssAnimate],

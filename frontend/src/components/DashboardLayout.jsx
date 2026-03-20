@@ -58,9 +58,9 @@ export default function DashboardLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? 'bg-accent-500/10 text-accent-400 border border-accent-500/20'
+                    ? 'bg-accent-500/10 text-accent-400 border border-accent-500/20 shadow-glow'
                     : 'text-white/60 hover:text-white hover:bg-white/5'
                 }`
               }

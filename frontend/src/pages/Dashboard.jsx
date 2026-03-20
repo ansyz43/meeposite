@@ -84,7 +84,7 @@ function StatCard({ icon: Icon, label, value, color }) {
     purple: 'text-purple-400 bg-purple-500/10',
   }
   return (
-    <div className="glass-card p-6">
+    <div className="glass-card p-6 hover:shadow-glow transition-all duration-300">
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
           <Icon size={20} />
