@@ -47,11 +47,16 @@ export default function CatalogPage() {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
   }, [success])
 
-  if (loading) return <div className="text-white/50">Загрузка...</div>
+  if (loading) return (
+    <div className="flex items-center gap-3 text-white/40">
+      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+      Загрузка...
+    </div>
+  )
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-2">Каталог ботов</h1>
+      <h1 className="text-2xl font-display font-bold mb-2">Каталог ботов</h1>
       <p className="text-white/50 mb-8">Выберите бота, чтобы стать его партнёром и получить реферальную ссылку</p>
 
       {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
@@ -70,7 +75,7 @@ export default function CatalogPage() {
               onClick={() => setSelectedBot(bot)}
               className={`glass-card p-5 cursor-pointer transition-all ${
                 selectedBot?.id === bot.id
-                  ? 'border-accent-500/50 bg-accent-500/5'
+                  ? 'border-emerald-500/50 bg-emerald-500/5'
                   : 'hover:bg-white/5'
               }`}
             >
@@ -78,7 +83,7 @@ export default function CatalogPage() {
                 {bot.avatar_url ? (
                   <img src={bot.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-dark-600 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center">
                     <Bot size={24} className="text-white/30" />
                   </div>
                 )}
@@ -89,7 +94,7 @@ export default function CatalogPage() {
                   )}
                 </div>
                 {selectedBot?.id === bot.id && (
-                  <div className="w-6 h-6 rounded-full bg-accent-500 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
                 )}

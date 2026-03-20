@@ -134,11 +134,19 @@ export default function Login() {
   const showSocial = import.meta.env.VITE_TELEGRAM_BOT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
-        <Link to="/" className="text-2xl font-bold text-accent-400 block text-center mb-8">Meepo</Link>
+    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-[#060B11]">
+      <div className="absolute inset-0 mesh-gradient" />
+      <div className="absolute top-[20%] left-[30%] w-[400px] h-[400px] bg-emerald-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 noise" />
+      <div className="w-full max-w-md relative">
+        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+            <LogIn size={16} className="text-white" />
+          </div>
+          <span className="text-2xl font-display font-bold gradient-text">Meepo</span>
+        </Link>
         <div className="glass-card p-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Вход</h1>
+          <h1 className="text-2xl font-display font-bold mb-6 text-center">Вход</h1>
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>
           )}
@@ -186,10 +194,10 @@ export default function Login() {
           )}
 
           <p className="text-center text-white/40 text-sm mt-4">
-            <Link to="/reset-password" className="text-white/50 hover:text-accent-400 hover:underline">Забыли пароль?</Link>
+            <Link to="/reset-password" className="text-white/50 hover:text-emerald-400 hover:underline transition-colors">Забыли пароль?</Link>
           </p>
           <p className="text-center text-white/40 text-sm mt-2">
-            Нет аккаунта? <Link to="/register" className="text-accent-400 hover:underline">Зарегистрироваться</Link>
+            Нет аккаунта? <Link to="/register" className="text-emerald-400 hover:underline">Зарегистрироваться</Link>
           </p>
         </div>
       </div>

@@ -9,7 +9,6 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
 
-  // Close sidebar on navigation (mobile)
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
   const navItems = [
@@ -26,63 +25,85 @@ export default function DashboardLayout() {
   ]
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#060B11]">
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-dark-800 border-b border-white/5 flex items-center px-4 h-14">
-        <button onClick={() => setSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">
-          <Menu size={22} />
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#0C1219]/90 backdrop-blur-2xl border-b border-white/[0.06] flex items-center px-4 h-14">
+        <button onClick={() => setSidebarOpen(true)} className="p-2 text-white/50 hover:text-white transition-colors">
+          <Menu size={20} />
         </button>
-        <div className="ml-3 text-lg font-bold text-accent-400">Meepo</div>
+        <div className="ml-3 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+            <Bot size={14} className="text-white" />
+          </div>
+          <span className="font-display font-bold gradient-text">Meepo</span>
+        </div>
       </div>
 
       {/* Overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`w-64 bg-dark-800 border-r border-white/5 flex flex-col fixed h-full z-50 transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-          <div>
-            <div className="text-xl font-bold text-accent-400">Meepo</div>
-            <div className="text-sm text-white/40 mt-1">{user?.name}</div>
+      <aside className={`w-64 bg-[#0C1219]/95 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col fixed h-full z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        {/* Logo */}
+        <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-glow">
+              <Bot size={18} className="text-white" />
+            </div>
+            <div>
+              <div className="font-display font-bold text-sm gradient-text">Meepo</div>
+              <div className="text-[11px] text-white/30 truncate max-w-[120px]">{user?.name}</div>
+            </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-white/40 hover:text-white">
-            <X size={20} />
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-white/30 hover:text-white transition-colors">
+            <X size={18} />
           </button>
         </div>
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative ${
                   isActive
-                    ? 'bg-accent-500/10 text-accent-400 border border-accent-500/20 shadow-glow'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                    : 'text-white/45 hover:text-white/80 hover:bg-white/[0.04]'
                 }`
               }
             >
-              <item.icon size={18} />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-emerald-400" />
+                  )}
+                  <item.icon size={17} className={`flex-shrink-0 ${isActive ? 'text-emerald-400' : 'text-white/35 group-hover:text-white/60'} transition-colors`} />
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/5">
+
+        {/* Logout */}
+        <div className="p-3 border-t border-white/[0.06]">
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-colors w-full"
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] text-white/30 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200 w-full cursor-pointer"
           >
-            <LogOut size={18} />
+            <LogOut size={17} />
             Выйти
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-18 md:pt-8">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-18 md:pt-8 min-h-screen">
         <Outlet />
       </main>
     </div>

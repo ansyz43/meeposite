@@ -50,12 +50,12 @@ export default function Conversations() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">Переписки</h1>
+      <h1 className="text-2xl font-display font-bold mb-8">Переписки</h1>
       <div className="glass-card overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
         <div className="flex h-full relative">
           {/* Left panel — conversation list */}
-          <div className={`w-full md:w-80 border-r border-white/5 flex flex-col ${selected ? 'hidden md:flex' : 'flex'}`}>
-            <div className="p-3 border-b border-white/5">
+          <div className={`w-full md:w-80 border-r border-white/[0.06] flex flex-col ${selected ? 'hidden md:flex' : 'flex'}`}>
+            <div className="p-3 border-b border-white/[0.06]">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -74,8 +74,8 @@ export default function Conversations() {
                 <button
                   key={c.contact_id}
                   onClick={() => selectConversation(c.contact_id)}
-                  className={`w-full text-left p-4 border-b border-white/5 hover:bg-white/5 transition-colors ${
-                    selected === c.contact_id ? 'bg-accent-500/10 border-l-2 border-l-accent-500'
+                  className={`w-full text-left p-4 border-b border-white/[0.06] hover:bg-white/5 transition-colors ${
+                    selected === c.contact_id ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500'
                     : c.link_sent ? 'bg-green-500/5 border-l-2 border-l-green-500/50'
                     : ''
                   }`}
@@ -93,7 +93,7 @@ export default function Conversations() {
                 </button>
               ))}
             </div>
-            <div className="p-3 border-t border-white/5 text-xs text-white/30">
+            <div className="p-3 border-t border-white/[0.06] text-xs text-white/30">
               Всего: {total}
             </div>
           </div>
@@ -106,14 +106,14 @@ export default function Conversations() {
               </div>
             ) : (
               <>
-              <div className="flex items-center justify-between p-3 border-b border-white/5">
+              <div className="flex items-center justify-between p-3 border-b border-white/[0.06]">
                 <button onClick={() => setSelected(null)} className="md:hidden flex items-center gap-1 text-sm text-white/50 hover:text-white">
                   <ArrowLeft size={16} />
                   Назад
                 </button>
                 <button
                   onClick={exportConversation}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-accent-400 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-emerald-400 transition-colors"
                 >
                   <Download size={14} />
                   Скачать переписку
@@ -124,8 +124,8 @@ export default function Conversations() {
                   <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                     <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
                       m.role === 'user'
-                        ? 'bg-dark-700 text-white/90 rounded-tl-md'
-                        : 'bg-accent-500/20 text-white/90 rounded-tr-md'
+                        ? 'bg-white/[0.05] text-white/80 rounded-tl-md border border-white/[0.04]'
+                        : 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white/90 rounded-tr-md border border-emerald-500/10'
                     }`}>
                       <p>{m.content}</p>
                       <div className="text-[10px] text-white/30 mt-1">

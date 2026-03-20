@@ -55,11 +55,16 @@ export default function BroadcastPage() {
     return () => clearInterval(t)
   }, [broadcasts])
 
-  if (loading) return <div className="text-white/50">Загрузка...</div>
+  if (loading) return (
+    <div className="flex items-center gap-3 text-white/40">
+      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+      Загрузка...
+    </div>
+  )
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">Рассылка</h1>
+      <h1 className="text-2xl font-display font-bold mb-8">Рассылка</h1>
 
       {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
       {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
@@ -67,7 +72,7 @@ export default function BroadcastPage() {
       {/* Create broadcast */}
       <div className="glass-card p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Send size={20} className="text-accent-400" />
+          <Send size={20} className="text-emerald-400" />
           <h2 className="font-semibold">Новая рассылка</h2>
         </div>
 
@@ -82,7 +87,7 @@ export default function BroadcastPage() {
             <label className="block text-sm text-white/60 mb-1.5">Картинка (не обязательно)</label>
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => bcFileRef.current?.click()}
-                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-white/70 hover:text-white transition-colors">
+                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.08] text-white/70 hover:text-white transition-colors">
                 <Image size={16} /> {bcImage ? bcImage.name : 'Выбрать файл'}
               </button>
               {bcImage && (
@@ -105,7 +110,7 @@ export default function BroadcastPage() {
       {/* Broadcast history */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Megaphone size={20} className="text-accent-400" />
+          <Megaphone size={20} className="text-emerald-400" />
           <h2 className="font-semibold">История рассылок</h2>
         </div>
 
@@ -114,7 +119,7 @@ export default function BroadcastPage() {
         ) : (
           <div className="space-y-3">
             {broadcasts.map(bc => (
-              <div key={bc.id} className="p-4 rounded-xl bg-white/5 border border-white/5">
+              <div key={bc.id} className="p-4 rounded-xl bg-white/5 border border-white/[0.06]">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white/80 whitespace-pre-wrap break-words">{bc.message_text.length > 200 ? bc.message_text.substring(0, 200) + '...' : bc.message_text}</p>

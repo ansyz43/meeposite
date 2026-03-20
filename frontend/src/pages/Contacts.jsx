@@ -36,7 +36,7 @@ export default function Contacts() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-        <h1 className="text-2xl font-bold">Контакты</h1>
+        <h1 className="text-2xl font-display font-bold">Контакты</h1>
         <button onClick={exportCSV} className="btn-secondary flex items-center gap-2 !py-2 text-sm">
           <Download size={16} /> Экспорт CSV
         </button>
@@ -44,7 +44,7 @@ export default function Contacts() {
 
       <div className="glass-card overflow-hidden">
         {/* Search */}
-        <div className="p-4 border-b border-white/5">
+        <div className="p-4 border-b border-white/[0.06]">
           <div className="relative max-w-sm">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
             <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
@@ -56,7 +56,7 @@ export default function Contacts() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-white/40 text-left">
+              <tr className="border-b border-white/[0.06] text-white/40 text-left">
                 <th className="px-4 py-3 font-medium">Имя</th>
                 <th className="px-4 py-3 font-medium">Username</th>
                 <th className="px-4 py-3 font-medium">Телефон</th>
@@ -76,9 +76,9 @@ export default function Contacts() {
                 </td></tr>
               )}
               {contacts.map(c => (
-                <tr key={c.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={c.id} className="border-b border-white/[0.06] hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3">{[c.first_name, c.last_name].filter(Boolean).join(' ') || '—'}</td>
-                  <td className="px-4 py-3 text-white/60">{c.telegram_username ? <a href={`https://t.me/${c.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-accent-400 hover:underline">@{c.telegram_username}</a> : '—'}</td>
+                  <td className="px-4 py-3 text-white/60">{c.telegram_username ? <a href={`https://t.me/${c.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">@{c.telegram_username}</a> : '—'}</td>
                   <td className="px-4 py-3 text-white/60">{c.phone || '—'}</td>
                   <td className="px-4 py-3 text-white/40">{c.first_message_at ? new Date(c.first_message_at).toLocaleDateString('ru') : '—'}</td>
                   <td className="px-4 py-3 text-white/40">{c.last_message_at ? new Date(c.last_message_at).toLocaleDateString('ru') : '—'}</td>
@@ -91,7 +91,7 @@ export default function Contacts() {
 
         {/* Pagination */}
         {total > 50 && (
-          <div className="p-4 border-t border-white/5 flex items-center justify-between">
+          <div className="p-4 border-t border-white/[0.06] flex items-center justify-between">
             <span className="text-sm text-white/40">Всего: {total}</span>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

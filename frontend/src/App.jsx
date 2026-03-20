@@ -39,7 +39,7 @@ class ErrorBoundary extends Component {
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex items-center justify-center h-screen"><div className="text-white/50">Загрузка...</div></div>
+  if (loading) return <div className="flex items-center justify-center h-screen bg-[#060B11]"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
   return user ? children : <Navigate to="/login" />
 }
 

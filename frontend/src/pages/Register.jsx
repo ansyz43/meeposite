@@ -142,13 +142,21 @@ export default function Register() {
   const showSocial = import.meta.env.VITE_TELEGRAM_BOT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
-        <Link to="/" className="text-2xl font-bold text-accent-400 block text-center mb-8">Meepo</Link>
+    <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden bg-[#060B11]">
+      <div className="absolute inset-0 mesh-gradient" />
+      <div className="absolute bottom-[20%] right-[20%] w-[400px] h-[400px] bg-teal-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 noise" />
+      <div className="w-full max-w-md relative">
+        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+            <UserPlus size={16} className="text-white" />
+          </div>
+          <span className="text-2xl font-display font-bold gradient-text">Meepo</span>
+        </Link>
         <div className="glass-card p-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Регистрация</h1>
+          <h1 className="text-2xl font-display font-bold mb-6 text-center">Регистрация</h1>
           {refCode && (
-            <div className="bg-accent-500/10 border border-accent-500/30 rounded-xl px-4 py-3 text-accent-400 text-sm mb-4 text-center">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-emerald-400 text-sm mb-4 text-center">
               Вас пригласили! После регистрации вы будете привязаны к реферальной сети
             </div>
           )}
@@ -204,7 +212,7 @@ export default function Register() {
             </button>
           </form>
           <p className="text-center text-white/40 text-sm mt-6">
-            Уже есть аккаунт? <Link to="/login" className="text-accent-400 hover:underline">Войти</Link>
+            Уже есть аккаунт? <Link to="/login" className="text-emerald-400 hover:underline">Войти</Link>
           </p>
         </div>
       </div>

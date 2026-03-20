@@ -228,7 +228,7 @@ function VisualTree({ tree, userName }) {
 
       {/* Tooltip */}
       {hovered && (
-        <div className="absolute top-2 right-2 bg-dark-800/95 border border-white/10 rounded-xl p-3 text-xs backdrop-blur-sm z-10 min-w-[160px]">
+        <div className="absolute top-2 right-2 bg-[#0C1219]/95 border border-white/[0.08] rounded-xl p-3 text-xs backdrop-blur-sm z-10 min-w-[160px]">
           <div className="font-medium text-white/90 mb-1">{hovered.name}</div>
           <div className="text-white/30 mb-2">{hovered.email}</div>
           <div className="space-y-1">
@@ -238,7 +238,7 @@ function VisualTree({ tree, userName }) {
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">Потратил</span>
-              <span className="text-accent-400">{(hovered.total_spent || 0).toFixed(1)} кр.</span>
+              <span className="text-emerald-400">{(hovered.total_spent || 0).toFixed(1)} кр.</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">Ваш доход</span>
@@ -282,7 +282,7 @@ function ReferralTree({ tree, userName }) {
   return (
     <div className="glass-card p-5 overflow-hidden">
       <h2 className="font-semibold mb-4 flex items-center gap-2">
-        <Users size={18} className="text-accent-400" />
+        <Users size={18} className="text-emerald-400" />
         Ваше дерево
       </h2>
       <VisualTree tree={tree} userName={userName} />
@@ -370,7 +370,12 @@ export default function PartnerPage() {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
   }, [success])
 
-  if (loading) return <div className="text-white/50">Загрузка...</div>
+  if (loading) return (
+    <div className="flex items-center gap-3 text-white/40">
+      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+      Загрузка...
+    </div>
+  )
 
   // Count totals
   const totalReferrals = countNodes(tree)
@@ -385,7 +390,7 @@ export default function PartnerPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Партнёрство</h1>
+      <h1 className="text-2xl font-display font-bold mb-6">Партнёрство</h1>
 
       {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
       {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
@@ -399,8 +404,8 @@ export default function PartnerPage() {
             <div className="text-xs text-white/40 mt-1">Баланс кэшбека</div>
           </div>
           <div className="glass-card p-5 text-center">
-            <Users size={22} className="text-accent-400 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-accent-400">{totalReferrals}</div>
+            <Users size={22} className="text-emerald-400 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-emerald-400">{totalReferrals}</div>
             <div className="text-xs text-white/40 mt-1">В команде</div>
           </div>
           <div className="glass-card p-5 text-center">
@@ -434,10 +439,10 @@ export default function PartnerPage() {
           <div className="text-xs text-white/40 mb-2">Реферальная ссылка бота @{partner.bot_username} (кредитов: {partner.credits})</div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <Link size={16} className="text-accent-400 shrink-0" />
+              <Link size={16} className="text-emerald-400 shrink-0" />
               <span className="text-white/70 text-sm truncate">{partner.ref_link}</span>
             </div>
-            <button onClick={copyBotRefLink} className="flex items-center gap-2 text-sm text-accent-400 hover:text-accent-300 shrink-0 ml-3">
+            <button onClick={copyBotRefLink} className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 shrink-0 ml-3">
               {copied ? <Check size={16} /> : <Copy size={16} />}
               {copied ? 'Скопировано' : 'Скопировать'}
             </button>
@@ -446,7 +451,7 @@ export default function PartnerPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-dark-700/50 rounded-xl p-1">
+      <div className="flex gap-1 mb-4 bg-white/[0.03] rounded-xl p-1">
         {[
           ...(user?.has_bot ? [
             { key: 'tree', label: 'Дерево', icon: Users },
@@ -458,7 +463,7 @@ export default function PartnerPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm flex-1 justify-center transition-colors ${
-              tab === t.key ? 'bg-dark-600 text-white' : 'text-white/40 hover:text-white/60'
+              tab === t.key ? 'bg-white/[0.06] text-white' : 'text-white/40 hover:text-white/60'
             }`}
           >
             <t.icon size={14} /> {t.label}
@@ -480,7 +485,7 @@ export default function PartnerPage() {
           ) : (
             <div className="space-y-2">
               {cashback.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+                <div key={tx.id} className="flex items-center justify-between py-2.5 border-b border-white/[0.06] last:border-0">
                   <div>
                     <div className="text-sm text-white/80">{tx.from_user_name}</div>
                     <div className="text-xs text-white/30">
@@ -510,7 +515,7 @@ export default function PartnerPage() {
           ) : (
             <div className="space-y-2">
               {sessions.map(s => (
-                <div key={s.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+                <div key={s.id} className="flex items-center justify-between py-2.5 border-b border-white/[0.06] last:border-0">
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${s.is_active ? 'bg-green-400' : 'bg-white/20'}`} />
                     <div>
@@ -532,7 +537,7 @@ export default function PartnerPage() {
           )}
 
           {/* Seller link form */}
-          <form onSubmit={saveSellerLink} className="mt-6 pt-4 border-t border-white/10 space-y-3">
+          <form onSubmit={saveSellerLink} className="mt-6 pt-4 border-t border-white/[0.08] space-y-3">
             <h3 className="text-sm font-medium text-white/60">Ваша ссылка продавца</h3>
             <div className="flex gap-2">
               <input

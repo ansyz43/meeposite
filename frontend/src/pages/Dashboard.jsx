@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api'
-import { Bot, MessageSquare, Users, ArrowRight } from 'lucide-react'
+import { Bot, MessageSquare, Users, ArrowRight, Sparkles } from 'lucide-react'
 
 export default function Dashboard() {
   const [bot, setBot] = useState(null)
@@ -27,48 +27,66 @@ export default function Dashboard() {
     load()
   }, [])
 
-  if (loading) return <div className="text-white/50">Загрузка...</div>
+  if (loading) return (
+    <div className="flex items-center gap-3 text-white/40">
+      <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+      Загрузка...
+    </div>
+  )
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">Панель управления</h1>
+      <h1 className="text-2xl font-display font-bold mb-8">Панель управления</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         <StatCard icon={Bot} label="Бот" value={bot ? (bot.is_active ? 'Активен' : 'Неактивен') : 'Не подключён'}
           color={bot?.is_active ? 'green' : 'yellow'} />
-        <StatCard icon={Users} label="Контакты" value={stats.contacts} color="blue" />
-        <StatCard icon={MessageSquare} label="Диалоги" value={stats.conversations} color="purple" />
+        <StatCard icon={Users} label="Контакты" value={stats.contacts} color="emerald" />
+        <StatCard icon={MessageSquare} label="Диалоги" value={stats.conversations} color="teal" />
       </div>
 
-      {/* Quick actions */}
+      {/* Empty state */}
       {!bot && (
-        <div className="glass-card p-8 text-center">
-          <Bot size={48} className="text-accent-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">У вас пока нет бота</h2>
-          <p className="text-white/50 mb-6">Нажмите кнопку — система автоматически назначит вам персонального ИИ-бота</p>
-          <Link to="/dashboard/bot" className="btn-primary inline-flex items-center gap-2">
-            Подключить <ArrowRight size={18} />
-          </Link>
+        <div className="glass-card p-10 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.04] to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
+              <Bot size={32} className="text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-display font-semibold mb-2">У вас пока нет бота</h2>
+            <p className="text-white/40 mb-6 max-w-sm mx-auto text-sm">Нажмите кнопку — система автоматически назначит вам персонального ИИ-бота</p>
+            <Link to="/dashboard/bot" className="btn-primary inline-flex items-center gap-2">
+              <span className="relative z-10 flex items-center gap-2">
+                Подключить <ArrowRight size={18} />
+              </span>
+            </Link>
+          </div>
         </div>
       )}
 
+      {/* Quick actions */}
       {bot && (
         <div className="glass-card p-6">
-          <h2 className="font-semibold mb-4">Быстрые действия</h2>
+          <h2 className="font-display font-semibold mb-4 flex items-center gap-2">
+            <Sparkles size={16} className="text-emerald-400" />
+            Быстрые действия
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Link to="/dashboard/bot" className="flex items-center gap-3 p-4 rounded-xl border border-white/5 hover:border-accent-500/30 transition-colors">
-              <Bot size={20} className="text-accent-400" />
-              <span className="text-sm">Настройки бота</span>
-            </Link>
-            <Link to="/dashboard/conversations" className="flex items-center gap-3 p-4 rounded-xl border border-white/5 hover:border-accent-500/30 transition-colors">
-              <MessageSquare size={20} className="text-accent-400" />
-              <span className="text-sm">Переписки</span>
-            </Link>
-            <Link to="/dashboard/contacts" className="flex items-center gap-3 p-4 rounded-xl border border-white/5 hover:border-accent-500/30 transition-colors">
-              <Users size={20} className="text-accent-400" />
-              <span className="text-sm">Контакты</span>
-            </Link>
+            {[
+              { to: '/dashboard/bot', icon: Bot, label: 'Настройки бота' },
+              { to: '/dashboard/conversations', icon: MessageSquare, label: 'Переписки' },
+              { to: '/dashboard/contacts', icon: Users, label: 'Контакты' },
+            ].map(item => (
+              <Link key={item.to} to={item.to}
+                className="flex items-center gap-3 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02]
+                hover:border-emerald-500/20 hover:bg-emerald-500/[0.04] transition-all duration-300 group">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:shadow-glow transition-shadow">
+                  <item.icon size={17} className="text-emerald-400" />
+                </div>
+                <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">{item.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
       )}
@@ -78,20 +96,20 @@ export default function Dashboard() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   const colors = {
-    green: 'text-green-400 bg-green-500/10',
-    yellow: 'text-yellow-400 bg-yellow-500/10',
-    blue: 'text-blue-400 bg-blue-500/10',
-    purple: 'text-purple-400 bg-purple-500/10',
+    green: 'text-green-400 bg-green-500/10 border-green-500/20',
+    yellow: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    teal: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
   }
   return (
-    <div className="glass-card p-6 hover:shadow-glow transition-all duration-300">
+    <div className="stat-card p-6">
       <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colors[color]}`}>
           <Icon size={20} />
         </div>
-        <span className="text-white/50 text-sm">{label}</span>
+        <span className="text-white/40 text-sm">{label}</span>
       </div>
-      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-2xl font-display font-bold">{value}</div>
     </div>
   )
 }
