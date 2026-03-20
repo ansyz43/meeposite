@@ -9,13 +9,10 @@ import asyncio
 import hashlib
 import logging
 import datetime
-import socket
 import time
 from collections import OrderedDict
 
-import aiohttp
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import CommandStart
 from sqlalchemy import select, update, func
 
@@ -373,9 +370,7 @@ async def start_bot(bot_record: BotModel, seller_name: str):
     while True:
         try:
             token = decrypt_token(bot_record.bot_token_encrypted)
-            connector = aiohttp.TCPConnector(family=socket.AF_INET)
-            session = AiohttpSession(connector=connector)
-            bot = Bot(token=token, session=session)
+            bot = Bot(token=token)
             dp = create_dispatcher(
                 bot_db_id=bot_record.id,
                 assistant_name=bot_record.assistant_name,
