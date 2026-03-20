@@ -24,6 +24,11 @@ from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartn
 from worker.crypto import decrypt_token
 from worker.ai_service import get_ai_response
 
+
+def _utcnow() -> datetime.datetime:
+    """Return current UTC time as a naive datetime (no tzinfo) for DB compat."""
+    return datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("meepo")
 
@@ -92,7 +97,7 @@ async def get_or_create_contact(session, bot_id: int, tg_user: types.User) -> Co
         contact.telegram_username = tg_user.username
         contact.first_name = tg_user.first_name
         contact.last_name = tg_user.last_name
-        contact.last_message_at = datetime.datetime.now(datetime.UTC)
+        contact.last_message_at = _utcnow()
         contact.message_count += 1
         await session.flush()
         return contact
@@ -103,7 +108,7 @@ async def get_or_create_contact(session, bot_id: int, tg_user: types.User) -> Co
         telegram_username=tg_user.username,
         first_name=tg_user.first_name,
         last_name=tg_user.last_name,
-        last_message_at=datetime.datetime.now(datetime.UTC),
+        last_message_at=_utcnow(),
         message_count=1,
     )
     session.add(contact)
@@ -150,7 +155,7 @@ async def create_referral_session(session, partner_id: int, contact_id: int, tel
     if not result.scalar_one_or_none():
         return None
 
-    now = datetime.datetime.now(datetime.UTC)
+    now = _utcnow()
     ref_session = ReferralSession(
         partner_id=partner_id,
         contact_id=contact_id,
@@ -167,7 +172,7 @@ async def create_referral_session(session, partner_id: int, contact_id: int, tel
 
 async def get_active_referral_session(session, bot_id: int, telegram_id: int):
     """Find an active, non-expired referral session for this telegram user on this bot."""
-    now = datetime.datetime.now(datetime.UTC)
+    now = _utcnow()
     result = await session.execute(
         select(ReferralSession, ReferralPartner)
         .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)

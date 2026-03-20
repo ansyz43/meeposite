@@ -213,7 +213,7 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Async
     reset = PasswordResetToken(
         user_id=user.id,
         token=code,
-        expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15),
+        expires_at=datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
     )
     db.add(reset)
     await db.commit()
@@ -234,7 +234,7 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: AsyncSessio
         select(PasswordResetToken).where(
             PasswordResetToken.token == data.code,
             PasswordResetToken.used == False,
-            PasswordResetToken.expires_at > datetime.datetime.now(datetime.timezone.utc),
+            PasswordResetToken.expires_at > datetime.datetime.utcnow(),
         )
     )
     reset = result.scalar_one_or_none()
@@ -445,7 +445,7 @@ async def set_password(data: SetPasswordRequest, db: AsyncSession = Depends(get_
         select(PasswordResetToken).where(
             PasswordResetToken.token == data.token,
             PasswordResetToken.used == False,
-            PasswordResetToken.expires_at > datetime.datetime.now(datetime.timezone.utc),
+            PasswordResetToken.expires_at > datetime.datetime.utcnow(),
         )
     )
     reset = result.scalar_one_or_none()
