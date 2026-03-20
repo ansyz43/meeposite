@@ -52,6 +52,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       PROXY_SECRET: ${PROXY_SECRET:-}
+      TELEGRAM_API_URL: ${TELEGRAM_API_URL:-}
       SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
 
   frontend:
