@@ -9,7 +9,6 @@ client = AsyncOpenAI(
     base_url=settings.OPENAI_BASE_URL or None,
     timeout=httpx.Timeout(60.0, connect=10.0),
     max_retries=2,
-    default_headers={"X-Proxy-Key": settings.PROXY_SECRET} if settings.PROXY_SECRET else {},
 )
 
 # ─── Static prompt (CACHED by OpenAI — identical across all bots/messages) ───
@@ -125,7 +124,7 @@ async def get_ai_response(
     messages.append({"role": "user", "content": user_message})
 
     response = await client.chat.completions.create(
-        model="gpt-5.4",
+        model="openai/gpt-4o-mini",
         messages=messages,
         max_completion_tokens=4096,
     )
