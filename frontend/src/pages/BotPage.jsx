@@ -594,11 +594,14 @@ export default function BotPage() {
 
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
               <p className="text-sm text-blue-400 font-medium mb-2">Перед подключением:</p>
-              <ol className="text-xs text-white/50 space-y-1 list-decimal list-inside">
-                <li>Откройте Настройки → Сообщения → включите «Сообщения сообщества»</li>
-                <li>Настройки → Работа с API → Long Poll API → включите</li>
-                <li>Во вкладке «Типы событий» отметьте «Входящее сообщение»</li>
-                <li>Создайте ключ доступа с правами на сообщения</li>
+              <ol className="text-xs text-white/50 space-y-1.5 list-decimal list-inside">
+                <li>Откройте ваше сообщество → <b className="text-white/70">Управление</b> (шестерёнка справа)</li>
+                <li><b className="text-white/70">Сообщения</b> → включите <b className="text-white/70">«Сообщения сообщества»</b></li>
+                <li><b className="text-white/70">Настройки</b> → <b className="text-white/70">Работа с API</b></li>
+                <li>Вкладка <b className="text-white/70">Long Poll API</b> → включите, версия <b className="text-white/70">5.199</b></li>
+                <li>Вкладка <b className="text-white/70">Типы событий</b> → отметьте <b className="text-white/70">«Входящее сообщение»</b></li>
+                <li>Вкладка <b className="text-white/70">Ключи доступа</b> → <b className="text-white/70">Создать ключ</b> → права на <b className="text-white/70">сообщения</b></li>
+                <li>ID сообщества — число из адресной строки (vk.com/club<b className="text-white/70">123456789</b>) или из раздела <b className="text-white/70">Работа с API</b></li>
               </ol>
             </div>
 
