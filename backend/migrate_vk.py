@@ -6,12 +6,20 @@ updates unique constraints.
 """
 
 import asyncio
+import os
 import asyncpg
 
 
 async def migrate():
+    # Extract password from DATABASE_URL or fallback
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url:
+        # DATABASE_URL format: postgresql+asyncpg://user:pass@host:port/db
+        password = db_url.split("://")[1].split("@")[0].split(":")[1]
+    else:
+        password = os.environ.get("DB_PASSWORD", "changeme")
     conn = await asyncpg.connect(
-        "postgresql://meepo:changeme@db:5432/meepo"
+        f"postgresql://meepo:{password}@db:5432/meepo"
     )
 
     try:
