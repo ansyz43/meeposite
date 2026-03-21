@@ -88,6 +88,10 @@ class BotUpdateRequest(BaseModel):
         v = v.strip()
         if v and not v.startswith(("http://", "https://")):
             v = "https://" + v
+        if v:
+            lower = v.lower()
+            if lower.startswith(("javascript:", "data:", "vbscript:")):
+                raise ValueError("Недопустимая ссылка")
         return v
 
 
@@ -127,6 +131,10 @@ class VkConnectRequest(BaseModel):
         v = v.strip()
         if v and not v.startswith(("http://", "https://")):
             v = "https://" + v
+        if v:
+            lower = v.lower()
+            if lower.startswith(("javascript:", "data:", "vbscript:")):
+                raise ValueError("Недопустимая ссылка")
         return v
 
 
@@ -199,6 +207,9 @@ class ReferralPartnerCreate(BaseModel):
         v = v.strip()
         if not v.startswith(("http://", "https://")):
             v = "https://" + v
+        lower = v.lower()
+        if lower.startswith(("javascript:", "data:", "vbscript:")):
+            raise ValueError("Недопустимая ссылка")
         return v
 
 
@@ -211,6 +222,9 @@ class ReferralPartnerUpdate(BaseModel):
         v = v.strip()
         if not v.startswith(("http://", "https://")):
             v = "https://" + v
+        lower = v.lower()
+        if lower.startswith(("javascript:", "data:", "vbscript:")):
+            raise ValueError("Недопустимая ссылка")
         return v
 
 

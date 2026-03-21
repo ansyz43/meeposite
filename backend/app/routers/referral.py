@@ -169,7 +169,7 @@ async def get_sessions(
     )
     rows = result.all()
 
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     return [
         ReferralSessionResponse(
             id=session.id,
@@ -229,7 +229,7 @@ async def get_my_bot_partners(
         return []
 
     # Get all partners with session counts in one query using subqueries
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     total_sessions_sq = (
         select(func.count(ReferralSession.id))
         .where(ReferralSession.partner_id == ReferralPartner.id)

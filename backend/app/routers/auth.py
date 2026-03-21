@@ -71,7 +71,7 @@ def _generate_reset_code() -> str:
 
 async def _send_reset_email(email: str, code: str):
     if not settings.SMTP_HOST:
-        logger.warning("SMTP not configured, reset code for %s: %s", email, code)
+        logger.warning("SMTP not configured, reset code not sent for %s", email)
         return
 
     msg = EmailMessage()
@@ -213,7 +213,7 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Async
     reset = PasswordResetToken(
         user_id=user.id,
         token=code,
-        expires_at=datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=15),
     )
     db.add(reset)
     await db.commit()

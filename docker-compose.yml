@@ -5,7 +5,7 @@ services:
     command: postgres -c max_connections=200 -c shared_buffers=256MB -c work_mem=8MB
     environment:
       POSTGRES_USER: meepo
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       POSTGRES_DB: meepo
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -24,15 +24,21 @@ services:
     volumes:
       - uploads_data:/app/uploads
     environment:
-      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:-changeme}@db:5432/meepo
-      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:?Set DB_PASSWORD in .env}@db:5432/meepo
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       TELEGRAM_BOT_TOKEN_LOGIN: ${TELEGRAM_BOT_TOKEN_LOGIN:-}
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   bot_worker:
     build: ./bot_worker
@@ -46,13 +52,13 @@ services:
     volumes:
       - ./knowledge_base:/app/knowledge_base:ro
     environment:
-      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:-changeme}@db:5432/meepo
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:?Set DB_PASSWORD in .env}@db:5432/meepo
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       CF_AIG_TOKEN: ${CF_AIG_TOKEN:-}
       PROXY_SECRET: ${PROXY_SECRET:-}
       TELEGRAM_API_URL: ${TELEGRAM_API_URL:-}
-      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       ALERT_CHAT_ID: ${ALERT_CHAT_ID:-}
       ALERT_BOT_TOKEN: ${ALERT_BOT_TOKEN:-}
     healthcheck:
