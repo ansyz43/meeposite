@@ -20,12 +20,19 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+        run: |
+          pip install -r backend/requirements.txt
+          pip install -r bot_worker/requirements.txt
 
       - name: Lint — syntax check
         run: |
           python -m py_compile backend/app/main.py
+          python -m py_compile backend/app/config.py
+          python -m py_compile backend/app/models.py
+          python -m py_compile backend/app/schemas.py
           python -m py_compile bot_worker/worker/main.py
+          python -m py_compile bot_worker/worker/ai_service.py
+          python -m py_compile bot_worker/worker/config.py
 
       - name: Run tests
         env:

@@ -16,6 +16,7 @@ Pillow==10.4.0
 cryptography>=42.0.0
 slowapi==0.1.9
 aiosmtplib==3.0.2
+sentry-sdk[fastapi]>=2.0.0
 
 # ─── Dev / Test ───
 pytest>=8.0

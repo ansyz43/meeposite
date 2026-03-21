@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "super-secret-key-change-in-production"
     ALERT_CHAT_ID: str = ""  # Telegram chat_id for admin alerts
     ALERT_BOT_TOKEN: str = ""  # Bot token used to send alerts
+    SENTRY_DSN: str = ""
 
     model_config = {"env_file": ".env"}
 

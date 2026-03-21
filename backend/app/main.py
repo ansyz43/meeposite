@@ -2,6 +2,7 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +19,14 @@ from app.routers import auth, profile, bot, conversations, referral, broadcast
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=0.1,
+        environment="production",
+    )
+    logger.info("Sentry initialized")
 
 limiter = Limiter(key_func=get_remote_address)
 

@@ -23,6 +23,17 @@ client = AsyncOpenAI(
     default_headers=_default_headers or None,
 )
 
+# Fallback client: direct OpenAI (no Cloudflare gateway), cheaper model
+FALLBACK_MODEL = "gpt-4o-mini"
+_fallback_client: AsyncOpenAI | None = None
+if settings.OPENAI_BASE_URL:
+    # Only create fallback if primary uses a gateway (otherwise it's the same)
+    _fallback_client = AsyncOpenAI(
+        api_key=settings.OPENAI_API_KEY,
+        timeout=httpx.Timeout(60.0, connect=10.0),
+        max_retries=2,
+    )
+
 
 # ─── Simple circuit breaker ───
 
@@ -200,6 +211,24 @@ async def get_ai_response(
             )
 
         return content
-    except Exception as e:
+    except Exception as primary_err:
         _cb.record_failure()
-        raise
+        if not _fallback_client:
+            raise
+        # Try fallback (direct OpenAI, cheaper model)
+        logger.warning(f"[{MODEL}] Primary failed, trying fallback {FALLBACK_MODEL}: {primary_err}")
+        try:
+            response = await _fallback_client.chat.completions.create(
+                model=FALLBACK_MODEL,
+                messages=messages,
+                max_completion_tokens=4096,
+            )
+            content = response.choices[0].message.content
+            if not content:
+                raise RuntimeError("Fallback AI returned empty response")
+            _cb.record_success()
+            logger.info(f"[{FALLBACK_MODEL}] Fallback succeeded")
+            return content
+        except Exception as fallback_err:
+            logger.error(f"[{FALLBACK_MODEL}] Fallback also failed: {fallback_err}")
+            raise primary_err

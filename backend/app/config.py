@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
 
+    SENTRY_DSN: str = ""
+
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     TELEGRAM_BOT_TOKEN_LOGIN: str = ""

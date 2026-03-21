@@ -13,6 +13,7 @@ import time
 from collections import OrderedDict
 from aiohttp import web
 
+import sentry_sdk
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
@@ -34,6 +35,14 @@ def _utcnow() -> datetime.datetime:
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("meepo")
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=0.1,
+        environment="production",
+    )
+    logger.info("Sentry initialized")
 
 # Active bot instances: bot_db_id -> (Bot, Dispatcher, task)
 active_bots: dict[int, tuple[Bot, Dispatcher, asyncio.Task]] = {}
