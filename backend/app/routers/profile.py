@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 
 async def _load_user_with_bot(user: User, db: AsyncSession) -> User:
     result = await db.execute(
-        select(User).options(selectinload(User.bot)).where(User.id == user.id)
+        select(User).options(selectinload(User.bots)).where(User.id == user.id)
     )
     return result.scalar_one()
 
@@ -41,7 +41,7 @@ async def get_profile(
         email=user.email,
         name=user.name,
         created_at=user.created_at,
-        has_bot=user.bot is not None,
+        has_bot=len(user.bots) > 0,
         ref_code=user.ref_code,
         ref_link=ref_link,
         cashback_balance=user.cashback_balance or 0.0,
@@ -75,7 +75,7 @@ async def update_profile(
         email=user.email,
         name=user.name,
         created_at=user.created_at,
-        has_bot=user.bot is not None,
+        has_bot=len(user.bots) > 0,
         ref_code=user.ref_code,
         ref_link=ref_link,
         cashback_balance=user.cashback_balance or 0.0,

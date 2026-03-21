@@ -26,12 +26,14 @@ TELEGRAM_API = "https://api.telegram.org/bot{token}"
 async def _get_user_bot(user: User, db: AsyncSession) -> Bot:
     from sqlalchemy.orm import selectinload
     result = await db.execute(
-        select(User).options(selectinload(User.bot)).where(User.id == user.id)
+        select(User).options(selectinload(User.bots)).where(User.id == user.id)
     )
     u = result.scalar_one()
-    if not u.bot:
+    # Default to TG bot for broadcasts
+    bot = next((b for b in u.bots if b.platform == "telegram"), None)
+    if not bot:
         raise HTTPException(status_code=404, detail="Нет подключённого бота")
-    return u.bot
+    return bot
 
 
 @router.post("/broadcast", response_model=BroadcastResponse, status_code=201)

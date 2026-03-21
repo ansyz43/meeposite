@@ -18,14 +18,15 @@ from app.auth import get_current_user
 router = APIRouter(prefix="/api", tags=["conversations"])
 
 
-async def _get_bot(user: User, db: AsyncSession) -> Bot:
+async def _get_bot_ids(user: User, db: AsyncSession) -> list[int]:
+    """Get all bot IDs for the current user (across all platforms)."""
     result = await db.execute(
-        select(Bot).where(Bot.user_id == user.id)
+        select(Bot.id).where(Bot.user_id == user.id)
     )
-    bot = result.scalar_one_or_none()
-    if not bot:
+    ids = [row[0] for row in result.all()]
+    if not ids:
         raise HTTPException(status_code=404, detail="No bot connected")
-    return bot
+    return ids
 
 
 # --- Contacts ---
@@ -38,10 +39,10 @@ async def list_contacts(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bot = await _get_bot(user, db)
+    bot_ids = await _get_bot_ids(user, db)
 
-    query = select(Contact).where(Contact.bot_id == bot.id)
-    count_query = select(func.count(Contact.id)).where(Contact.bot_id == bot.id)
+    query = select(Contact).where(Contact.bot_id.in_(bot_ids))
+    count_query = select(func.count(Contact.id)).where(Contact.bot_id.in_(bot_ids))
 
     if search:
         safe_search = search.replace("%", "\\%").replace("_", "\\_")
@@ -76,17 +77,18 @@ async def export_contacts(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bot = await _get_bot(user, db)
+    bot_ids = await _get_bot_ids(user, db)
     result = await db.execute(
-        select(Contact).where(Contact.bot_id == bot.id).order_by(desc(Contact.last_message_at))
+        select(Contact).where(Contact.bot_id.in_(bot_ids)).order_by(desc(Contact.last_message_at))
     )
     contacts = result.scalars().all()
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Имя", "Фамилия", "Username", "Телефон", "Первое сообщение", "Последняя активность", "Сообщений"])
+    writer.writerow(["Платформа", "Имя", "Фамилия", "Username", "Телефон", "Первое сообщение", "Последняя активность", "Сообщений"])
     for c in contacts:
         writer.writerow([
+            c.platform or "telegram",
             c.first_name or "",
             c.last_name or "",
             c.telegram_username or "",
@@ -114,10 +116,10 @@ async def list_conversations(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bot = await _get_bot(user, db)
+    bot_ids = await _get_bot_ids(user, db)
 
-    query = select(Contact).where(Contact.bot_id == bot.id, Contact.message_count > 0)
-    count_query = select(func.count(Contact.id)).where(Contact.bot_id == bot.id, Contact.message_count > 0)
+    query = select(Contact).where(Contact.bot_id.in_(bot_ids), Contact.message_count > 0)
+    count_query = select(func.count(Contact.id)).where(Contact.bot_id.in_(bot_ids), Contact.message_count > 0)
 
     if search:
         safe_search = search.replace("%", "\\%").replace("_", "\\_")
@@ -167,6 +169,7 @@ async def list_conversations(
     for c in contacts:
         previews.append(ConversationPreview(
             contact_id=c.id,
+            platform=c.platform,
             telegram_username=c.telegram_username,
             first_name=c.first_name,
             last_name=c.last_name,
@@ -187,10 +190,10 @@ async def get_conversation(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bot = await _get_bot(user, db)
+    bot_ids = await _get_bot_ids(user, db)
 
     result = await db.execute(
-        select(Contact).where(Contact.id == contact_id, Contact.bot_id == bot.id)
+        select(Contact).where(Contact.id == contact_id, Contact.bot_id.in_(bot_ids))
     )
     contact = result.scalar_one_or_none()
     if not contact:
@@ -223,10 +226,10 @@ async def export_conversation(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bot = await _get_bot(user, db)
+    bot_ids = await _get_bot_ids(user, db)
 
     result = await db.execute(
-        select(Contact).where(Contact.id == contact_id, Contact.bot_id == bot.id)
+        select(Contact).where(Contact.id == contact_id, Contact.bot_id.in_(bot_ids))
     )
     contact = result.scalar_one_or_none()
     if not contact:
@@ -239,7 +242,7 @@ async def export_conversation(
     )
     messages = msg_result.scalars().all()
 
-    name = contact.first_name or contact.telegram_username or str(contact.telegram_id)
+    name = contact.first_name or contact.telegram_username or str(contact.telegram_id or contact.vk_id or contact.id)
     lines = [f"Переписка с {name}", "=" * 40, ""]
     for m in messages:
         ts = m.created_at.strftime("%d.%m.%Y %H:%M") if m.created_at else ""
@@ -260,7 +263,9 @@ async def export_conversation(
 def _contact_response(c: Contact) -> ContactResponse:
     return ContactResponse(
         id=c.id,
+        platform=c.platform,
         telegram_id=c.telegram_id,
+        vk_id=c.vk_id,
         telegram_username=c.telegram_username,
         first_name=c.first_name,
         last_name=c.last_name,

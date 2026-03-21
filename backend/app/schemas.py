@@ -93,6 +93,7 @@ class BotUpdateRequest(BaseModel):
 
 class BotResponse(BaseModel):
     id: int
+    platform: str = "telegram"
     bot_username: str | None
     assistant_name: str
     seller_link: str | None
@@ -101,6 +102,7 @@ class BotResponse(BaseModel):
     avatar_url: str | None
     allow_partners: bool
     is_active: bool
+    vk_group_id: int | None = None
     created_at: datetime.datetime
 
 
@@ -109,10 +111,31 @@ class BotStatusResponse(BaseModel):
     bot_username: str | None
 
 
+class VkConnectRequest(BaseModel):
+    group_id: int
+    group_token: str = Field(min_length=10, max_length=500)
+    assistant_name: str = Field(min_length=1, max_length=255)
+    seller_link: str | None = Field(None, max_length=500)
+    greeting_message: str | None = Field(None, max_length=2000)
+    bot_description: str | None = Field(None, max_length=512)
+
+    @field_validator("seller_link")
+    @classmethod
+    def validate_seller_link(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if v and not v.startswith(("http://", "https://")):
+            v = "https://" + v
+        return v
+
+
 # --- Contacts ---
 class ContactResponse(BaseModel):
     id: int
-    telegram_id: int
+    platform: str = "telegram"
+    telegram_id: int | None = None
+    vk_id: int | None = None
     telegram_username: str | None
     first_name: str | None
     last_name: str | None
@@ -137,6 +160,7 @@ class MessageResponse(BaseModel):
 
 class ConversationPreview(BaseModel):
     contact_id: int
+    platform: str = "telegram"
     telegram_username: str | None
     first_name: str | None
     last_name: str | None

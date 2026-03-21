@@ -24,6 +24,8 @@ from worker.database import async_session
 from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartner, ReferralSession
 from worker.crypto import decrypt_token
 from worker.ai_service import get_ai_response
+from worker.vk_handler import start_vk_bot as _start_vk_bot
+import worker.vk_handler as vk_handler
 
 
 def _utcnow() -> datetime.datetime:
@@ -45,6 +47,9 @@ _DEDUP_TTL = 120  # seconds
 
 # Limit concurrent AI requests to prevent OpenAI rate limit avalanche
 _ai_semaphore = asyncio.Semaphore(30)
+
+# Share semaphore with VK handler
+vk_handler._ai_semaphore = _ai_semaphore
 
 # ─── Health check HTTP server ───
 _worker_started_at = time.monotonic()
@@ -497,8 +502,11 @@ async def sync_bots():
         new_hash = _compute_settings_hash(bot_record, user_record.name)
 
         if bot_record.id not in active_bots:
-            # Start new bot
-            task = asyncio.create_task(start_bot(bot_record, user_record.name))
+            # Start new bot (dispatch by platform)
+            if bot_record.platform == "vk":
+                task = asyncio.create_task(_start_vk_bot(bot_record, user_record.name))
+            else:
+                task = asyncio.create_task(start_bot(bot_record, user_record.name))
             active_bots[bot_record.id] = (None, None, task)
             bot_settings_hash[bot_record.id] = new_hash
         elif bot_settings_hash.get(bot_record.id) != new_hash:
@@ -506,7 +514,10 @@ async def sync_bots():
             logger.info(f"Settings changed for bot #{bot_record.id}, restarting...")
             _, _, old_task = active_bots[bot_record.id]
             old_task.cancel()
-            task = asyncio.create_task(start_bot(bot_record, user_record.name))
+            if bot_record.platform == "vk":
+                task = asyncio.create_task(_start_vk_bot(bot_record, user_record.name))
+            else:
+                task = asyncio.create_task(start_bot(bot_record, user_record.name))
             active_bots[bot_record.id] = (None, None, task)
             bot_settings_hash[bot_record.id] = new_hash
 

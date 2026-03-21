@@ -22,16 +22,18 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
-    bot: Mapped["Bot | None"] = relationship("Bot", back_populates="owner", uselist=False, cascade="all, delete-orphan")
+    bots: Mapped[list["Bot"]] = relationship("Bot", back_populates="owner", cascade="all, delete-orphan")
     referred_by: Mapped["User | None"] = relationship("User", remote_side="User.id", foreign_keys=[referred_by_id])
     referrals: Mapped[list["User"]] = relationship("User", back_populates="referred_by", foreign_keys=[referred_by_id])
 
 
 class Bot(Base):
     __tablename__ = "bots"
+    __table_args__ = (UniqueConstraint("user_id", "platform", name="uq_bot_user_platform"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), unique=True, nullable=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    platform: Mapped[str] = mapped_column(String(10), nullable=False, default="telegram")
     bot_token_encrypted: Mapped[str] = mapped_column(String(500), nullable=False)
     bot_username: Mapped[str | None] = mapped_column(String(255))
     assistant_name: Mapped[str] = mapped_column(String(255), nullable=False, default="Ассистент")
@@ -39,22 +41,28 @@ class Bot(Base):
     greeting_message: Mapped[str | None] = mapped_column(Text)
     bot_description: Mapped[str | None] = mapped_column(Text)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
+    vk_group_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     allow_partners: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
-    owner: Mapped["User"] = relationship("User", back_populates="bot")
+    owner: Mapped["User"] = relationship("User", back_populates="bots")
     contacts: Mapped[list["Contact"]] = relationship("Contact", back_populates="bot", cascade="all, delete-orphan")
     referral_partners: Mapped[list["ReferralPartner"]] = relationship("ReferralPartner", back_populates="bot", cascade="all, delete-orphan")
 
 
 class Contact(Base):
     __tablename__ = "contacts"
-    __table_args__ = (UniqueConstraint("bot_id", "telegram_id"),)
+    __table_args__ = (
+        UniqueConstraint("bot_id", "telegram_id", name="uq_contact_bot_tg"),
+        UniqueConstraint("bot_id", "vk_id", name="uq_contact_bot_vk"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String(10), nullable=False, default="telegram")
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    vk_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
     telegram_username: Mapped[str | None] = mapped_column(String(255))
     first_name: Mapped[str | None] = mapped_column(String(255))
     last_name: Mapped[str | None] = mapped_column(String(255))

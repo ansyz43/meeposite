@@ -8,8 +8,10 @@ class Bot(Base):
     __tablename__ = "bots"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    platform: Mapped[str] = mapped_column(String(10), nullable=False, default="telegram")
     bot_token_encrypted: Mapped[str] = mapped_column(String(500), nullable=False)
     bot_username: Mapped[str | None] = mapped_column(String(255))
+    vk_group_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     assistant_name: Mapped[str] = mapped_column(String(255), nullable=False)
     seller_link: Mapped[str | None] = mapped_column(String(500))
     greeting_message: Mapped[str | None] = mapped_column(Text)
@@ -35,10 +37,15 @@ class User(Base):
 
 class Contact(Base):
     __tablename__ = "contacts"
-    __table_args__ = (UniqueConstraint("bot_id", "telegram_id"),)
+    __table_args__ = (
+        UniqueConstraint("bot_id", "telegram_id", name="uq_contact_bot_tg"),
+        UniqueConstraint("bot_id", "vk_id", name="uq_contact_bot_vk"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    platform: Mapped[str] = mapped_column(String(10), nullable=False, default="telegram")
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    vk_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     telegram_username: Mapped[str | None] = mapped_column(String(255))
     first_name: Mapped[str | None] = mapped_column(String(255))
     last_name: Mapped[str | None] = mapped_column(String(255))
