@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     PROXY_SECRET: str = ""
     TELEGRAM_API_URL: str = ""
     SECRET_KEY: str = "super-secret-key-change-in-production"
+    ALERT_CHAT_ID: str = ""  # Telegram chat_id for admin alerts
+    ALERT_BOT_TOKEN: str = ""  # Bot token used to send alerts
 
     model_config = {"env_file": ".env"}
 

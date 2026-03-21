@@ -11,6 +11,7 @@ import logging
 import datetime
 import time
 from collections import OrderedDict
+from aiohttp import web
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -44,6 +45,48 @@ _DEDUP_TTL = 120  # seconds
 
 # Limit concurrent AI requests to prevent OpenAI rate limit avalanche
 _ai_semaphore = asyncio.Semaphore(30)
+
+# ─── Health check HTTP server ───
+_worker_started_at = time.monotonic()
+
+async def _health_handler(request: web.Request) -> web.Response:
+    """Health check endpoint for Docker."""
+    uptime = int(time.monotonic() - _worker_started_at)
+    return web.json_response({
+        "status": "ok",
+        "active_bots": len(active_bots),
+        "uptime_seconds": uptime,
+    })
+
+async def _start_health_server():
+    app = web.Application()
+    app.router.add_get("/health", _health_handler)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+    logger.info("Health check server started on :8080")
+
+# ─── Telegram alerts ───
+_last_alert_time: float = 0
+_ALERT_COOLDOWN = 300  # max 1 alert per 5 minutes
+
+async def send_alert(text: str):
+    """Send alert to admin via Telegram (with cooldown)."""
+    global _last_alert_time
+    if not settings.ALERT_CHAT_ID or not settings.ALERT_BOT_TOKEN:
+        return
+    now = time.monotonic()
+    if now - _last_alert_time < _ALERT_COOLDOWN:
+        return
+    _last_alert_time = now
+    try:
+        bot = Bot(token=settings.ALERT_BOT_TOKEN)
+        await bot.send_message(chat_id=settings.ALERT_CHAT_ID, text=f"⚠️ Meepo Alert\n\n{text}")
+        await bot.session.close()
+        logger.info("Alert sent to admin")
+    except Exception as e:
+        logger.error(f"Failed to send alert: {e}")
 
 
 def _is_duplicate(chat_id: int, message_id: int) -> bool:
@@ -380,9 +423,11 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             if last_error == "timeout":
                 logger.error(f"[BOT#{bot_db_id}] AI failed after {max_retries} retries: timeout")
                 ai_response = "Извините, ответ занял слишком много времени. Попробуйте ещё раз."
+                asyncio.create_task(send_alert(f"BOT#{bot_db_id}: AI timeout after {max_retries} retries"))
             else:
                 logger.error(f"[BOT#{bot_db_id}] AI failed after {max_retries} retries: {last_error}")
                 ai_response = "Извините, произошла временная ошибка. Попробуйте ещё раз через несколько секунд."
+                asyncio.create_task(send_alert(f"BOT#{bot_db_id}: AI error — {last_error[:200]}"))
 
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
@@ -477,6 +522,7 @@ async def sync_bots():
 
 async def main():
     logger.info("Meepo Bot Worker starting...")
+    await _start_health_server()
 
     while True:
         try:

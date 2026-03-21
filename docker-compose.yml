@@ -53,6 +53,14 @@ services:
       PROXY_SECRET: ${PROXY_SECRET:-}
       TELEGRAM_API_URL: ${TELEGRAM_API_URL:-}
       SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      ALERT_CHAT_ID: ${ALERT_CHAT_ID:-}
+      ALERT_BOT_TOKEN: ${ALERT_BOT_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   frontend:
     build:
