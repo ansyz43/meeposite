@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -24,9 +25,7 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Run Alembic migrations on startup
+def _run_alembic_upgrade():
     alembic_cfg = AlembicConfig(
         os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini")
     )
@@ -35,8 +34,13 @@ async def lifespan(app: FastAPI):
         os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic"),
     )
     alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    alembic_command.upgrade(alembic_cfg, "head")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     try:
-        alembic_command.upgrade(alembic_cfg, "head")
+        await asyncio.get_event_loop().run_in_executor(None, _run_alembic_upgrade)
         logger.info("Database migrations applied successfully")
     except Exception:
         logger.exception("Failed to apply database migrations")
