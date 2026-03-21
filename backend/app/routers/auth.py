@@ -179,7 +179,7 @@ async def refresh(request: Request, db: AsyncSession = Depends(get_db)):
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
 
-    user_id = decode_token(refresh_token)
+    user_id = decode_token(refresh_token, expected_type="refresh")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
