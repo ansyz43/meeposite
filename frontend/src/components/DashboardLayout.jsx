@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Bot, MessageSquare, Users, User, LogOut, LayoutDashboard, Handshake, Store, Menu, X, Megaphone } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 
 export default function DashboardLayout() {

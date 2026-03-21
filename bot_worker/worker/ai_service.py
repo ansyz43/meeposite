@@ -11,11 +11,16 @@ logger = logging.getLogger(__name__)
 
 MODEL = "gpt-5.4"
 
+_default_headers = {}
+if settings.CF_AIG_TOKEN:
+    _default_headers["cf-aig-authorization"] = f"Bearer {settings.CF_AIG_TOKEN}"
+
 client = AsyncOpenAI(
     api_key=settings.OPENAI_API_KEY,
     base_url=settings.OPENAI_BASE_URL or None,
     timeout=httpx.Timeout(60.0, connect=10.0),
     max_retries=2,
+    default_headers=_default_headers or None,
 )
 
 
