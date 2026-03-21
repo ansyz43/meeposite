@@ -9,7 +9,7 @@ from worker.rag import select_relevant_kb
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gpt-5.4"
+MODEL = "gpt-5.4-mini"
 
 _default_headers = {}
 if settings.CF_AIG_TOKEN:
