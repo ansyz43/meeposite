@@ -114,16 +114,17 @@ async def _run_long_poll(http, token, group_id, bot_db_id,
     key = lp["key"]
     ts = lp["ts"]
 
-    logger.info(f"[VK_BOT#{bot_db_id}] Long Poll connected")
+    logger.info(f"[VK_BOT#{bot_db_id}] Long Poll connected, server={server[:50]}...")
 
     while True:
         try:
             url = f"{server}?act=a_check&key={key}&ts={ts}&wait=25"
-            async with http.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+            async with http.get(url, timeout=aiohttp.ClientTimeout(total=90)) as resp:
                 data = await resp.json()
 
             if "failed" in data:
                 fail_code = data["failed"]
+                logger.warning(f"[VK_BOT#{bot_db_id}] LP fail code {fail_code}")
                 if fail_code == 1:
                     ts = data.get("ts", ts)
                     continue
@@ -138,9 +139,13 @@ async def _run_long_poll(http, token, group_id, bot_db_id,
             ts = data.get("ts", ts)
             updates = data.get("updates", [])
 
+            if updates:
+                logger.info(f"[VK_BOT#{bot_db_id}] Got {len(updates)} updates: {[u.get('type') for u in updates]}")
+
             for update in updates:
                 if update.get("type") == "message_new":
                     msg_obj = update.get("object", {}).get("message", {})
+                    logger.info(f"[VK_BOT#{bot_db_id}] message_new from_id={msg_obj.get('from_id')} text={msg_obj.get('text', '')[:50]}")
                     asyncio.create_task(
                         _handle_vk_message(
                             http, token, bot_db_id, msg_obj,
