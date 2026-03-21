@@ -258,6 +258,20 @@ async def connect_vk_bot(
             group_info = groups[0] if isinstance(groups, list) else groups
             group_name = group_info.get("name", f"VK Group {data.group_id}")
             group_screen = group_info.get("screen_name", "")
+
+            # Auto-enable Long Poll events (message_new, message_reply)
+            await client.post(
+                f"{VK_API}/groups.setLongPollSettings",
+                data={
+                    "access_token": data.group_token,
+                    "group_id": str(data.group_id),
+                    "enabled": "1",
+                    "message_new": "1",
+                    "message_reply": "1",
+                    "v": "5.199",
+                },
+                timeout=10,
+            )
     except HTTPException:
         raise
     except Exception as e:
