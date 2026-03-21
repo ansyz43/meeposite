@@ -1,5 +1,4 @@
 import os
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -11,8 +10,6 @@ from sqlalchemy import text
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from alembic.config import Config as AlembicConfig
-from alembic import command as alembic_command
 
 from app.config import settings
 from app.database import engine, Base
@@ -25,26 +22,8 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
-def _run_alembic_upgrade():
-    alembic_cfg = AlembicConfig(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini")
-    )
-    alembic_cfg.set_main_option(
-        "script_location",
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic"),
-    )
-    alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-    alembic_command.upgrade(alembic_cfg, "head")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        await asyncio.get_event_loop().run_in_executor(None, _run_alembic_upgrade)
-        logger.info("Database migrations applied successfully")
-    except Exception:
-        logger.exception("Failed to apply database migrations")
-        raise
     yield
 
 
