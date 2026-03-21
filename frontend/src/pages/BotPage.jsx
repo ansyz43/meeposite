@@ -646,6 +646,12 @@ export default function BotPage() {
               className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors">
               <ExternalLink size={14} /> Открыть
             </a>
+            {vkBot.vk_group_id && (
+              <a href={`https://vk.com/im?sel=-${vkBot.vk_group_id}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 transition-colors">
+                <MessageCircle size={14} /> Написать боту
+              </a>
+            )}
           </div>
         </div>
       )}

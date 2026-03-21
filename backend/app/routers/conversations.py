@@ -36,6 +36,7 @@ async def list_contacts(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     search: str = Query("", max_length=100),
+    platform: str = Query("", max_length=10),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -43,6 +44,10 @@ async def list_contacts(
 
     query = select(Contact).where(Contact.bot_id.in_(bot_ids))
     count_query = select(func.count(Contact.id)).where(Contact.bot_id.in_(bot_ids))
+
+    if platform in ("telegram", "vk"):
+        query = query.where(Contact.platform == platform)
+        count_query = count_query.where(Contact.platform == platform)
 
     if search:
         safe_search = search.replace("%", "\\%").replace("_", "\\_")
@@ -113,6 +118,7 @@ async def list_conversations(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     search: str = Query("", max_length=100),
+    platform: str = Query("", max_length=10),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -120,6 +126,10 @@ async def list_conversations(
 
     query = select(Contact).where(Contact.bot_id.in_(bot_ids), Contact.message_count > 0)
     count_query = select(func.count(Contact.id)).where(Contact.bot_id.in_(bot_ids), Contact.message_count > 0)
+
+    if platform in ("telegram", "vk"):
+        query = query.where(Contact.platform == platform)
+        count_query = count_query.where(Contact.platform == platform)
 
     if search:
         safe_search = search.replace("%", "\\%").replace("_", "\\_")

@@ -4,23 +4,48 @@ import { MessageSquare, Search, Download, ArrowLeft, ArrowDown, User } from 'luc
 import PageHeader from '../components/ui/PageHeader'
 import Loader from '../components/ui/Loader'
 
+function VkBadge() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" className="text-blue-400 shrink-0">
+      <path d="M12.785 16.241s.288-.032.436-.194c.136-.148.132-.427.132-.427s-.02-1.304.587-1.496c.598-.188 1.368 1.259 2.184 1.814.616.42 1.084.328 1.084.328l2.178-.03s1.14-.07.6-.964c-.044-.073-.316-.662-1.624-1.872-1.37-1.268-1.186-1.062.464-3.254.764-1.012 1.542-2.122 1.404-2.476-.132-.33-.944-.244-.944-.244l-2.45.016s-.182-.024-.316.056c-.132.078-.216.262-.216.262s-.388 1.032-.904 1.91c-1.092 1.862-1.528 1.96-1.708 1.846-.418-.268-.314-1.076-.314-1.65 0-1.792.272-2.54-.528-2.734-.266-.064-.462-.106-1.14-.112-.87-.01-1.606.002-2.024.206-.278.136-.492.438-.362.456.162.022.528.098.722.362.25.342.242 1.11.242 1.11s.144 2.11-.336 2.372c-.33.18-.782-.188-1.754-1.874-.498-.864-.874-1.818-.874-1.818s-.072-.178-.202-.274c-.156-.116-.376-.152-.376-.152l-2.328.016s-.35.01-.478.162c-.114.136-.01.416-.01.416s1.82 4.258 3.882 6.404c1.888 1.966 4.034 1.836 4.034 1.836h.972z"/>
+    </svg>
+  )
+}
+
+function TgBadge() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" className="text-sky-400 shrink-0">
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+    </svg>
+  )
+}
+
+const platformTabs = [
+  { key: '', label: 'Все' },
+  { key: 'telegram', label: 'Telegram', icon: <TgBadge /> },
+  { key: 'vk', label: 'ВКонтакте', icon: <VkBadge /> },
+]
+
 export default function Conversations() {
   const [conversations, setConversations] = useState([])
   const [selected, setSelected] = useState(null)
   const [messages, setMessages] = useState([])
   const [search, setSearch] = useState('')
+  const [platform, setPlatform] = useState('')
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const messagesEndRef = useRef(null)
   const chatRef = useRef(null)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
 
-  useEffect(() => { loadConversations() }, [search])
+  useEffect(() => { loadConversations() }, [search, platform])
 
   async function loadConversations() {
     setLoading(true)
     try {
-      const { data } = await api.get('/api/conversations', { params: { search, per_page: 100 } })
+      const params = { search, per_page: 100 }
+      if (platform) params.platform = platform
+      const { data } = await api.get('/api/conversations', { params })
       setConversations(data.conversations)
       setTotal(data.total)
     } catch { /* ignore */ }
@@ -67,7 +92,22 @@ export default function Conversations() {
   return (
     <div>
       <PageHeader title="Переписки" subtitle={total > 0 ? `${total} диалогов` : undefined} />
-      <div className="glass-card overflow-hidden h-[calc(100vh-12rem)]">
+
+      {/* Platform filter tabs */}
+      <div className="flex gap-1 mb-4 p-1 bg-white/[0.03] rounded-xl w-fit border border-white/[0.06]">
+        {platformTabs.map(t => (
+          <button key={t.key} onClick={() => { setPlatform(t.key); setSelected(null) }}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              platform === t.key
+                ? 'bg-white/[0.1] text-white shadow-sm'
+                : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
+            }`}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="glass-card overflow-hidden h-[calc(100vh-14rem)]">
         <div className="flex h-full relative">
           {/* Left panel — conversation list */}
           <div className={`w-full md:w-80 border-r border-white/[0.06] flex flex-col ${selected ? 'hidden md:flex' : 'flex'}`}>
@@ -99,8 +139,11 @@ export default function Conversations() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 relative">
                       <User size={16} className="text-white/30" />
+                      <span className="absolute -bottom-0.5 -right-0.5">
+                        {c.platform === 'vk' ? <VkBadge /> : <TgBadge />}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
