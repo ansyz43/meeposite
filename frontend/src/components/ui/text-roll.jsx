@@ -18,7 +18,18 @@ export function TextRoll({
   }, [texts.length, duration]);
 
   return (
-    <span className={cn("relative inline-flex overflow-hidden", className)}>
+    <span className={cn("relative inline-grid overflow-hidden align-bottom", className)}>
+      {/* Hidden sizer texts — all stacked in same grid cell to set width to longest */}
+      {texts.map((text, i) => (
+        <span
+          key={`sizer-${i}`}
+          className="invisible col-start-1 row-start-1 gradient-text"
+          aria-hidden="true"
+        >
+          {text}
+        </span>
+      ))}
+      {/* Animated visible text */}
       <AnimatePresence mode="wait">
         <motion.span
           key={index}
@@ -29,7 +40,7 @@ export function TextRoll({
             duration: 0.5,
             ease: [0.32, 0.72, 0, 1],
           }}
-          className="inline-block gradient-text"
+          className="col-start-1 row-start-1 gradient-text"
         >
           {texts[index]}
         </motion.span>

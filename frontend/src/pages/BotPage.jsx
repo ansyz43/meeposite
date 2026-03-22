@@ -122,9 +122,9 @@ export default function BotPage() {
     try {
       await api.post('/api/bot/claim')
       setSuccess('Бот создан! Заполните настройки.')
+      setShowTgGroup(true)
       await loadBots()
       await loadProfile()
-      setShowTgGroup(true)
     } catch (err) {
       const d = err.response?.data?.detail
       setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка создания бота')
@@ -217,8 +217,8 @@ export default function BotPage() {
       setVkSellerLink(data.seller_link || '')
       setVkGreeting(data.greeting_message || '')
       setVkBotDescription(data.bot_description || '')
-      setSuccess('VK-бот подключён!')
       setShowTgGroup(true)
+      setSuccess('VK-бот подключён!')
       setVkGroupId('')
       setVkGroupToken('')
       setVkConnectName('')

@@ -15,6 +15,19 @@ export default function DashboardLayout() {
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
+  // Glass-card mouse glow — delegate from document
+  useEffect(() => {
+    function handleMouseMove(e) {
+      const card = e.target.closest('.glass-card')
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--mouse-x', (e.clientX - rect.left) + 'px')
+      card.style.setProperty('--mouse-y', (e.clientY - rect.top) + 'px')
+    }
+    document.addEventListener('mousemove', handleMouseMove)
+    return () => document.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Главная', end: true },
     ...(user?.has_bot ? [

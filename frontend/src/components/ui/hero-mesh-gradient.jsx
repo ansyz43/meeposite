@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 
 /**
  * Animated mesh gradient background using Canvas.
- * WebGL-free — uses simple radial gradient circles with slow drift.
+ * When fixed=true, covers the full viewport with position:fixed so content scrolls over it.
  */
-export function HeroMeshGradient({ className = "" }) {
+export function HeroMeshGradient({ className = "", fixed = false }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
@@ -17,9 +17,14 @@ export function HeroMeshGradient({ className = "" }) {
     let w, h;
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rect = canvas.parentElement.getBoundingClientRect();
-      w = rect.width;
-      h = rect.height;
+      if (fixed) {
+        w = window.innerWidth;
+        h = window.innerHeight;
+      } else {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        w = rect.width;
+        h = rect.height;
+      }
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       canvas.style.width = w + "px";
@@ -43,8 +48,8 @@ export function HeroMeshGradient({ className = "" }) {
         const cy = (b.y + Math.cos(t * b.speed * 0.7 + b.phase) * 0.06) * h;
         const radius = b.r * Math.min(w, h);
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        grad.addColorStop(0, `rgba(${b.color.join(",")}, 0.10)`);
-        grad.addColorStop(0.5, `rgba(${b.color.join(",")}, 0.04)`);
+        grad.addColorStop(0, `rgba(${b.color.join(",")}, 0.12)`);
+        grad.addColorStop(0.5, `rgba(${b.color.join(",")}, 0.05)`);
         grad.addColorStop(1, `rgba(${b.color.join(",")}, 0)`);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
@@ -57,12 +62,12 @@ export function HeroMeshGradient({ className = "" }) {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [fixed]);
 
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 pointer-events-none ${className}`}
+      className={`pointer-events-none ${fixed ? 'fixed inset-0 z-0' : 'absolute inset-0'} ${className}`}
       aria-hidden="true"
     />
   );
