@@ -57,6 +57,7 @@ class ProfileResponse(BaseModel):
     name: str
     created_at: datetime.datetime
     has_bot: bool
+    is_admin: bool = False
     ref_code: str | None = None
     ref_link: str | None = None
     cashback_balance: float = 0.0

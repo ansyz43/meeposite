@@ -15,7 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import engine, Base
 from app.logging_config import setup_logging, RequestIDMiddleware
-from app.routers import auth, profile, bot, conversations, referral, broadcast
+from app.routers import auth, profile, bot, conversations, referral, broadcast, admin
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -77,3 +77,4 @@ app.include_router(bot.router)
 app.include_router(conversations.router)
 app.include_router(referral.router)
 app.include_router(broadcast.router)
+app.include_router(admin.router)

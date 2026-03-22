@@ -13,6 +13,7 @@ import CatalogPage from './pages/CatalogPage'
 import PartnerPage from './pages/PartnerPage'
 import BroadcastPage from './pages/BroadcastPage'
 import ResetPassword from './pages/ResetPassword'
+import AdminPage from './pages/AdminPage'
 import DashboardLayout from './components/DashboardLayout'
 
 class ErrorBoundary extends Component {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="partner" element={<PartnerPage />} />
           <Route path="broadcast" element={<BroadcastPage />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="admin" element={<AdminPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
