@@ -6,6 +6,7 @@ import PageHeader from '../components/ui/PageHeader'
 import Loader from '../components/ui/Loader'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
+import TelegramGroupPopup from '../components/ui/TelegramGroupPopup'
 
 // VK icon as inline SVG
 function VkIcon({ size = 18, className = '' }) {
@@ -38,6 +39,7 @@ export default function BotPage() {
   const [copied, setCopied] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [showDisconnect, setShowDisconnect] = useState(false)
+  const [showTgGroup, setShowTgGroup] = useState(false)
   const fileInputRef = useRef(null)
 
   // Partners
@@ -122,6 +124,7 @@ export default function BotPage() {
       setSuccess('Бот создан! Заполните настройки.')
       await loadBots()
       await loadProfile()
+      setShowTgGroup(true)
     } catch (err) {
       const d = err.response?.data?.detail
       setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка создания бота')
@@ -215,6 +218,7 @@ export default function BotPage() {
       setVkGreeting(data.greeting_message || '')
       setVkBotDescription(data.bot_description || '')
       setSuccess('VK-бот подключён!')
+      setShowTgGroup(true)
       setVkGroupId('')
       setVkGroupToken('')
       setVkConnectName('')
@@ -729,6 +733,8 @@ export default function BotPage() {
       >
         VK-бот будет полностью удалён вместе с контактами и переписками. Это действие нельзя отменить.
       </Modal>
+
+      <TelegramGroupPopup open={showTgGroup} onClose={() => setShowTgGroup(false)} />
     </div>
   )
 }

@@ -23,6 +23,13 @@
     --ring: 160 84% 39%;
     --radius: 0.75rem;
     --accent: 160 84% 39%;
+
+    /* Rainbow button — emerald palette */
+    --color-1: #059669;
+    --color-2: #10B981;
+    --color-3: #14B8A6;
+    --color-4: #34D399;
+    --color-5: #06B6D4;
   }
 
   body {

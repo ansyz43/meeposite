@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Bot, MessageSquare, Users, Clock, Brain, Zap, Shield, ArrowRight, CheckCircle2, ChevronDown, Sparkles, BarChart3, Globe, Eye, Send, Plug, Settings2 } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { RainbowButton } from '../components/ui/rainbow-button'
+import { TextRoll } from '../components/ui/text-roll'
+import { HeroMeshGradient } from '../components/ui/hero-mesh-gradient'
 
 /* ─── Intersection Observer hook ─── */
 function useInView(options = {}) {
@@ -94,8 +97,8 @@ function Hero() {
   const [ref, isInView] = useInView()
   return (
     <section ref={ref} className="relative min-h-screen flex items-center pt-16 pb-20 px-6 overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 mesh-gradient" />
+      {/* Animated mesh gradient background */}
+      <HeroMeshGradient />
       <div className="absolute top-[20%] left-[10%] w-[500px] h-[500px] bg-emerald-500/[0.07] rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] bg-teal-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute inset-0 noise" />
@@ -109,20 +112,24 @@ function Hero() {
               <span>AI-Платформа для FitLine</span>
             </div>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
-              Ваш ИИ-ассистент, который продаёт{' '}
-              <span className="gradient-text">FitLine за вас</span>
-              {' '}24/7
+              Ваш ИИ-ассистент, который{' '}
+              <TextRoll
+                texts={['продаёт FitLine', 'отвечает клиентам', 'приводит покупателей', 'работает 24/7']}
+                duration={3000}
+              />
+              {' '}
+              <span className="gradient-text">за вас</span>
             </h1>
             <p className="text-lg text-white/50 max-w-xl mb-8 leading-relaxed">
               Персональный Telegram-бот на GPT, который знает всё о продукции, 
               отвечает клиентам от вашего имени и приводит готовых покупателей
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link to="/register" className="btn-primary text-base flex items-center justify-center gap-2 group">
-                <span className="relative z-10 flex items-center gap-2">
-                  Создать бота бесплатно 
+              <Link to="/register">
+                <RainbowButton className="text-base flex items-center gap-2 group">
+                  Создать бота бесплатно
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                </span>
+                </RainbowButton>
               </Link>
               <a href="#how-it-works" className="btn-secondary text-base flex items-center justify-center gap-2">
                 Как это работает
@@ -452,11 +459,11 @@ function CTA() {
               Подключите ИИ-ассистента за 5 минут и пусть он работает за вас — 
               пока вы занимаетесь важными делами
             </p>
-            <Link to="/register" className="btn-primary text-base inline-flex items-center gap-2 group">
-              <span className="relative z-10 flex items-center gap-2">
+            <Link to="/register">
+              <RainbowButton className="text-base inline-flex items-center gap-2 group">
                 Создать бота бесплатно
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </span>
+              </RainbowButton>
             </Link>
             <p className="text-white/30 text-xs mt-4">Бесплатная регистрация • Без банковской карты</p>
           </div>

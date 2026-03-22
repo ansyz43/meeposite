@@ -1,12 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Bot, MessageSquare, Users, User, LogOut, LayoutDashboard, Handshake, Store, Menu, X, Megaphone, Shield } from 'lucide-react'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+
+const SIDEBAR_COLLAPSED = 64
+const SIDEBAR_EXPANDED = 256
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const location = useLocation()
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
@@ -27,6 +31,8 @@ export default function DashboardLayout() {
     ] : []),
   ]
 
+  const expanded = hovered
+
   return (
     <div className="min-h-screen flex bg-[#060B11]">
       {/* Mobile header */}
@@ -42,20 +48,25 @@ export default function DashboardLayout() {
         </div>
       </div>
 
-      {/* Overlay */}
+      {/* Overlay — mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`w-64 bg-[#0C1219]/95 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col fixed h-full z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+      <aside
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{ width: expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED }}
+        className={`bg-[#0C1219]/95 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col fixed h-full z-50 transition-all duration-300 ease-in-out overflow-hidden ${sidebarOpen ? 'translate-x-0 !w-64' : '-translate-x-full'} md:translate-x-0`}
+      >
         {/* Logo */}
-        <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-glow">
+        <div className="p-3 border-b border-white/[0.06] flex items-center justify-between h-14">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-glow shrink-0 ml-1">
               <Bot size={18} className="text-white" />
             </div>
-            <div className="font-display font-bold text-sm gradient-text">Meepo</div>
+            <div className={`font-display font-bold text-sm gradient-text whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0 md:opacity-0'}`}>Meepo</div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-white/30 hover:text-white transition-colors">
             <X size={18} />
@@ -63,14 +74,15 @@ export default function DashboardLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
+              title={!expanded ? item.label : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative whitespace-nowrap ${
                   isActive
                     ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
                     : 'text-white/45 hover:text-white/80 hover:bg-white/[0.04]'
@@ -83,7 +95,7 @@ export default function DashboardLayout() {
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-emerald-400" />
                   )}
                   <item.icon size={17} className={`flex-shrink-0 ${isActive ? 'text-emerald-400' : 'text-white/35 group-hover:text-white/60'} transition-colors`} />
-                  {item.label}
+                  <span className={`transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
                 </>
               )}
             </NavLink>
@@ -91,28 +103,28 @@ export default function DashboardLayout() {
         </nav>
 
         {/* User info + Logout */}
-        <div className="p-3 border-t border-white/[0.06] space-y-2">
-          <div className="flex items-center gap-3 px-3.5 py-2">
+        <div className="p-2 border-t border-white/[0.06] space-y-1">
+          <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold shrink-0">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
-            <div className="min-w-0">
+            <div className={`min-w-0 transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
               <div className="text-[13px] font-medium text-white/70 truncate">{user?.name || 'Пользователь'}</div>
               <div className="text-[11px] text-white/25 truncate">{user?.email}</div>
             </div>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-[13px] text-white/30 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200 w-full cursor-pointer"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-white/30 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200 w-full cursor-pointer whitespace-nowrap"
           >
-            <LogOut size={17} />
-            Выйти
+            <LogOut size={17} className="shrink-0" />
+            <span className={`transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>Выйти</span>
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-18 md:pt-8 min-h-screen">
+      {/* Main content — left margin matches collapsed sidebar on desktop */}
+      <main className="flex-1 p-4 md:p-8 pt-18 md:pt-8 min-h-screen transition-[margin] duration-300 md:ml-16">
         <Outlet />
       </main>
     </div>
