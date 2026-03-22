@@ -22,7 +22,14 @@ from app.services.crypto import decrypt_token, encrypt_token
 
 router = APIRouter(prefix="/api/bot", tags=["bot"])
 
-TELEGRAM_API = "https://api.telegram.org/bot{token}"
+
+def _tg_api(token: str) -> str:
+    """Return Telegram API base URL for a given bot token."""
+    if settings.TELEGRAM_API_URL:
+        return f"{settings.TELEGRAM_API_URL.rstrip('/')}/bot{token}"
+    return f"https://api.telegram.org/bot{token}"
+
+
 VK_API = "https://api.vk.com/method"
 
 
@@ -69,25 +76,26 @@ async def claim_bot(
     # Set bot info in Telegram API
     try:
         token = decrypt_token(free_bot.bot_token_encrypted)
+        base = _tg_api(token)
         async with httpx.AsyncClient() as client:
-            resp = await client.get(f"{TELEGRAM_API.format(token=token)}/getMe", timeout=10)
+            resp = await client.get(f"{base}/getMe", timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get("ok"):
                     free_bot.bot_username = data["result"].get("username")
             await client.post(
-                f"{TELEGRAM_API.format(token=token)}/setMyName",
+                f"{base}/setMyName",
                 json={"name": free_bot.assistant_name},
                 timeout=10,
             )
             if free_bot.bot_description:
                 await client.post(
-                    f"{TELEGRAM_API.format(token=token)}/setMyDescription",
+                    f"{base}/setMyDescription",
                     json={"description": free_bot.bot_description[:512]},
                     timeout=10,
                 )
                 await client.post(
-                    f"{TELEGRAM_API.format(token=token)}/setMyShortDescription",
+                    f"{base}/setMyShortDescription",
                     json={"short_description": free_bot.bot_description[:120]},
                     timeout=10,
                 )
@@ -129,25 +137,29 @@ async def update_bot(
     if data.allow_partners is not None:
         bot.allow_partners = data.allow_partners
 
-    # Update bot name in Telegram
-    token = decrypt_token(bot.bot_token_encrypted)
-    async with httpx.AsyncClient() as client:
-        await client.post(
-            f"{TELEGRAM_API.format(token=token)}/setMyName",
-            json={"name": data.assistant_name},
-            timeout=10,
-        )
-        if data.bot_description:
+    # Update bot name in Telegram (non-blocking: save to DB even if TG API fails)
+    try:
+        token = decrypt_token(bot.bot_token_encrypted)
+        base = _tg_api(token)
+        async with httpx.AsyncClient() as client:
             await client.post(
-                f"{TELEGRAM_API.format(token=token)}/setMyDescription",
-                json={"description": data.bot_description[:512]},
+                f"{base}/setMyName",
+                json={"name": data.assistant_name},
                 timeout=10,
             )
-            await client.post(
-                f"{TELEGRAM_API.format(token=token)}/setMyShortDescription",
-                json={"short_description": data.bot_description[:120]},
-                timeout=10,
-            )
+            if data.bot_description:
+                await client.post(
+                    f"{base}/setMyDescription",
+                    json={"description": data.bot_description[:512]},
+                    timeout=10,
+                )
+                await client.post(
+                    f"{base}/setMyShortDescription",
+                    json={"short_description": data.bot_description[:120]},
+                    timeout=10,
+                )
+    except Exception as e:
+        logger.warning(f"Failed to update bot info in Telegram: {e}")
 
     await db.commit()
     await db.refresh(bot)
