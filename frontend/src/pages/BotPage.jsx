@@ -145,6 +145,7 @@ export default function BotPage() {
         allow_partners: allowPartners,
       })
       setSuccess('Настройки сохранены!')
+      setShowTgGroup(true)
       await loadBots()
     } catch (err) {
       const d = err.response?.data?.detail

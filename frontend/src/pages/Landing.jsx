@@ -122,7 +122,7 @@ function Hero() {
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Link to="/register" className="btn-primary text-base flex items-center gap-2 group">
                 <span className="relative z-10 flex items-center gap-2">
-                  Создать бота бесплатно
+                  Создать бота
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
@@ -456,7 +456,7 @@ function CTA() {
             </p>
             <Link to="/register" className="btn-primary text-base inline-flex items-center gap-2 group">
               <span className="relative z-10 flex items-center gap-2">
-                Создать бота бесплатно
+                Создать бота
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </span>
             </Link>
