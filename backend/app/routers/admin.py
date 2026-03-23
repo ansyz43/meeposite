@@ -29,6 +29,11 @@ async def admin_stats(
     total_messages = (await db.execute(select(func.count(Message.id)))).scalar() or 0
     total_broadcasts = (await db.execute(select(func.count(Broadcast.id)))).scalar() or 0
 
+    total_partners = (await db.execute(select(func.count(ReferralPartner.id)))).scalar() or 0
+    active_partners = (await db.execute(select(func.count(ReferralPartner.id)).where(ReferralPartner.is_active == True))).scalar() or 0
+    total_sessions = (await db.execute(select(func.count(ReferralSession.id)))).scalar() or 0
+    total_cashback = (await db.execute(select(func.coalesce(func.sum(CashbackTransaction.amount), 0)))).scalar() or 0
+
     return {
         "total_users": total_users,
         "active_users": active_users,
@@ -38,6 +43,10 @@ async def admin_stats(
         "total_contacts": total_contacts,
         "total_messages": total_messages,
         "total_broadcasts": total_broadcasts,
+        "total_partners": total_partners,
+        "active_partners": active_partners,
+        "total_sessions": total_sessions,
+        "total_cashback": float(total_cashback),
     }
 
 
@@ -251,6 +260,88 @@ async def admin_list_bots(
     }
 
 
+@router.get("/bots/{bot_id}")
+async def admin_get_bot(
+    bot_id: int,
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Bot).options(selectinload(Bot.owner)).where(Bot.id == bot_id)
+    )
+    bot = result.scalar_one_or_none()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Бот не найден")
+
+    contacts_count = (await db.execute(
+        select(func.count(Contact.id)).where(Contact.bot_id == bot_id)
+    )).scalar() or 0
+
+    messages_count = (await db.execute(
+        select(func.count(Message.id)).where(
+            Message.contact_id.in_(select(Contact.id).where(Contact.bot_id == bot_id))
+        )
+    )).scalar() or 0
+
+    broadcasts_count = (await db.execute(
+        select(func.count(Broadcast.id)).where(Broadcast.bot_id == bot_id)
+    )).scalar() or 0
+
+    # Referral partners for this bot
+    partners_result = await db.execute(
+        select(ReferralPartner)
+        .options(selectinload(ReferralPartner.user))
+        .where(ReferralPartner.bot_id == bot_id)
+        .order_by(ReferralPartner.created_at.desc())
+    )
+    partners = partners_result.scalars().all()
+
+    partner_ids = [p.id for p in partners]
+    session_counts = {}
+    if partner_ids:
+        sc_result = await db.execute(
+            select(ReferralSession.partner_id, func.count(ReferralSession.id))
+            .where(ReferralSession.partner_id.in_(partner_ids))
+            .group_by(ReferralSession.partner_id)
+        )
+        session_counts = dict(sc_result.all())
+
+    return {
+        "id": bot.id,
+        "platform": bot.platform,
+        "bot_username": bot.bot_username,
+        "assistant_name": bot.assistant_name,
+        "seller_link": bot.seller_link,
+        "greeting_message": bot.greeting_message,
+        "bot_description": bot.bot_description,
+        "avatar_url": bot.avatar_url,
+        "vk_group_id": bot.vk_group_id,
+        "allow_partners": bot.allow_partners,
+        "is_active": bot.is_active,
+        "created_at": bot.created_at.isoformat() if bot.created_at else None,
+        "owner_id": bot.owner.id if bot.owner else None,
+        "owner_email": bot.owner.email if bot.owner else None,
+        "owner_name": bot.owner.name if bot.owner else None,
+        "contacts_count": contacts_count,
+        "messages_count": messages_count,
+        "broadcasts_count": broadcasts_count,
+        "referral_partners": [
+            {
+                "id": p.id,
+                "user_name": p.user.name if p.user else None,
+                "user_email": p.user.email if p.user else None,
+                "ref_code": p.ref_code,
+                "seller_link": p.seller_link,
+                "credits": p.credits,
+                "is_active": p.is_active,
+                "sessions_count": session_counts.get(p.id, 0),
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in partners
+        ],
+    }
+
+
 @router.delete("/bots/{bot_id}")
 async def admin_delete_bot(
     bot_id: int,
@@ -268,6 +359,118 @@ async def admin_delete_bot(
 
     logger.info(f"Admin {admin.email} deleted bot @{username} (id={bot_id})")
     return {"detail": f"Бот @{username} удалён"}
+
+
+# ─── Referrals ───────────────────────────────────────
+@router.get("/referrals")
+async def admin_list_referrals(
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    search: str = Query("", max_length=100),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    query = select(ReferralPartner).options(
+        selectinload(ReferralPartner.user),
+        selectinload(ReferralPartner.bot),
+    )
+    count_query = select(func.count(ReferralPartner.id))
+
+    if search:
+        safe = search.replace("%", "\\%").replace("_", "\\_")
+        like = f"%{safe}%"
+        query = query.join(ReferralPartner.user).filter(
+            or_(User.name.ilike(like), User.email.ilike(like), ReferralPartner.ref_code.ilike(like))
+        )
+        count_query = count_query.join(ReferralPartner.user).filter(
+            or_(User.name.ilike(like), User.email.ilike(like), ReferralPartner.ref_code.ilike(like))
+        )
+
+    total = (await db.execute(count_query)).scalar() or 0
+    result = await db.execute(
+        query.order_by(ReferralPartner.created_at.desc()).limit(limit).offset(offset)
+    )
+    partners = result.scalars().all()
+
+    partner_ids = [p.id for p in partners]
+    session_counts = {}
+    active_session_counts = {}
+    if partner_ids:
+        sc_result = await db.execute(
+            select(ReferralSession.partner_id, func.count(ReferralSession.id))
+            .where(ReferralSession.partner_id.in_(partner_ids))
+            .group_by(ReferralSession.partner_id)
+        )
+        session_counts = dict(sc_result.all())
+        asc_result = await db.execute(
+            select(ReferralSession.partner_id, func.count(ReferralSession.id))
+            .where(ReferralSession.partner_id.in_(partner_ids), ReferralSession.is_active == True)
+            .group_by(ReferralSession.partner_id)
+        )
+        active_session_counts = dict(asc_result.all())
+
+    return {
+        "partners": [
+            {
+                "id": p.id,
+                "user_id": p.user_id,
+                "user_name": p.user.name if p.user else None,
+                "user_email": p.user.email if p.user else None,
+                "bot_id": p.bot_id,
+                "bot_username": p.bot.bot_username if p.bot else None,
+                "bot_platform": p.bot.platform if p.bot else None,
+                "ref_code": p.ref_code,
+                "seller_link": p.seller_link,
+                "credits": p.credits,
+                "is_active": p.is_active,
+                "sessions_count": session_counts.get(p.id, 0),
+                "active_sessions": active_session_counts.get(p.id, 0),
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in partners
+        ],
+        "total": total,
+    }
+
+
+@router.get("/cashback")
+async def admin_list_cashback(
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    total = (await db.execute(select(func.count(CashbackTransaction.id)))).scalar() or 0
+    result = await db.execute(
+        select(CashbackTransaction)
+        .options(
+            selectinload(CashbackTransaction.user),
+            selectinload(CashbackTransaction.from_user),
+        )
+        .order_by(CashbackTransaction.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    txns = result.scalars().all()
+
+    return {
+        "transactions": [
+            {
+                "id": t.id,
+                "user_name": t.user.name if t.user else None,
+                "user_email": t.user.email if t.user else None,
+                "from_user_name": t.from_user.name if t.from_user else None,
+                "from_user_email": t.from_user.email if t.from_user else None,
+                "amount": float(t.amount),
+                "source_amount": float(t.source_amount),
+                "level": t.level,
+                "source_type": t.source_type,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+            }
+            for t in txns
+        ],
+        "total": total,
+    }
 
 
 # ─── Conversations ───────────────────────────────────

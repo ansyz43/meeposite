@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Shield, Users, Bot, BarChart3, Search, Trash2, Eye, ToggleLeft, ToggleRight, ChevronLeft, ChevronRight, MessageSquare, X, AlertTriangle, ArrowLeft, ArrowDown, Download } from 'lucide-react'
+import { Shield, Users, Bot, BarChart3, Search, Trash2, Eye, ToggleLeft, ToggleRight, ChevronLeft, ChevronRight, MessageSquare, X, AlertTriangle, ArrowLeft, ArrowDown, Download, Handshake, Link, Settings, Hash } from 'lucide-react'
 import api from '../api'
 
 const TABS = [
@@ -7,6 +7,7 @@ const TABS = [
   { key: 'users', label: 'Пользователи', icon: Users },
   { key: 'bots', label: 'Боты', icon: Bot },
   { key: 'chats', label: 'Чаты', icon: MessageSquare },
+  { key: 'referrals', label: 'Рефералы', icon: Handshake },
 ]
 
 function StatCard({ label, value, sub, accent }) {
@@ -40,6 +41,9 @@ function StatsTab() {
       <StatCard label="Боты в пуле" value={stats.pool_bots} />
       <StatCard label="Рассылки" value={stats.total_broadcasts} />
       <StatCard label="Активные юзеры" value={stats.active_users} />
+      <StatCard label="Реф. партнёры" value={stats.total_partners} sub={`${stats.active_partners} активных`} />
+      <StatCard label="Реф. сессии" value={stats.total_sessions} />
+      <StatCard label="Кэшбэк (всего)" value={`${stats.total_cashback?.toFixed(2) || 0} ₽`} />
     </div>
   )
 }
@@ -286,6 +290,7 @@ function BotsTab() {
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [viewBot, setViewBot] = useState(null)
   const limit = 20
 
   const load = useCallback(() => {
@@ -367,7 +372,10 @@ function BotsTab() {
                     </span>
                   </td>
                   <td className="py-3 px-3">
-                    <div className="flex justify-end">
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={() => setViewBot(b.id)} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 transition-colors" title="Подробнее">
+                        <Eye size={15} />
+                      </button>
                       <button onClick={() => setDeleteTarget(b)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-colors" title="Удалить бота">
                         <Trash2 size={15} />
                       </button>
@@ -404,6 +412,324 @@ function BotsTab() {
         title="Удалить бота?"
         message={`Бот @${deleteTarget?.bot_username || '—'} будет полностью удалён из базы данных вместе со всеми контактами и переписками.`}
       />
+
+      <BotDetailModal botId={viewBot} onClose={() => setViewBot(null)} />
+    </div>
+  )
+}
+
+function BotDetailModal({ botId, onClose }) {
+  const [bot, setBot] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!botId) return
+    setLoading(true)
+    api.get(`/api/admin/bots/${botId}`).then(r => setBot(r.data)).finally(() => setLoading(false))
+  }, [botId])
+
+  if (!botId) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-card p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bot?.platform === 'vk' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
+              <Bot size={20} className={bot?.platform === 'vk' ? 'text-blue-400' : 'text-emerald-400'} />
+            </div>
+            <div>
+              <h3 className="font-display font-semibold text-white">@{bot?.bot_username || '...'}</h3>
+              <p className="text-white/30 text-xs">{bot?.platform === 'vk' ? 'VK' : 'Telegram'} бот</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-white/30 hover:text-white transition-colors"><X size={18} /></button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+        ) : bot ? (
+          <div className="space-y-5">
+            {/* Main info */}
+            <div>
+              <div className="text-white/40 text-xs font-medium mb-3 flex items-center gap-2"><Settings size={12} /> Настройки</div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-white/40">Имя ассистента:</span> <span className="text-white/80">{bot.assistant_name}</span></div>
+                <div><span className="text-white/40">Статус:</span> <span className={bot.is_active ? 'text-emerald-400' : 'text-red-400'}>{bot.is_active ? 'Активен' : 'Неактивен'}</span></div>
+                <div className="col-span-2"><span className="text-white/40">Ссылка продавца:</span> <span className="text-white/80 break-all">{bot.seller_link || '—'}</span></div>
+                {bot.platform === 'vk' && bot.vk_group_id && (
+                  <div><span className="text-white/40">VK Group ID:</span> <span className="text-white/80">{bot.vk_group_id}</span></div>
+                )}
+                <div><span className="text-white/40">Партнёры:</span> <span className={bot.allow_partners ? 'text-emerald-400' : 'text-white/50'}>{bot.allow_partners ? 'Включены' : 'Выключены'}</span></div>
+                <div><span className="text-white/40">Создан:</span> <span className="text-white/80">{bot.created_at ? new Date(bot.created_at).toLocaleString('ru') : '—'}</span></div>
+              </div>
+            </div>
+
+            {/* Greeting */}
+            {bot.greeting_message && (
+              <div>
+                <div className="text-white/40 text-xs font-medium mb-2">Приветствие</div>
+                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-white/60 whitespace-pre-wrap">{bot.greeting_message}</div>
+              </div>
+            )}
+
+            {/* Description */}
+            {bot.bot_description && (
+              <div>
+                <div className="text-white/40 text-xs font-medium mb-2">Описание</div>
+                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-white/60 whitespace-pre-wrap">{bot.bot_description}</div>
+              </div>
+            )}
+
+            {/* Owner */}
+            <div>
+              <div className="text-white/40 text-xs font-medium mb-3 flex items-center gap-2"><Users size={12} /> Владелец</div>
+              {bot.owner_email ? (
+                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm">
+                  <span className="text-white/70">{bot.owner_name}</span>
+                  <span className="text-white/30 ml-2">{bot.owner_email}</span>
+                </div>
+              ) : (
+                <div className="text-xs px-3 py-2 rounded-lg bg-white/5 text-white/30 inline-block">В пуле (нет владельца)</div>
+              )}
+            </div>
+
+            {/* Counters */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
+                <div className="text-lg font-bold text-white">{bot.contacts_count}</div>
+                <div className="text-white/30 text-xs">Контакты</div>
+              </div>
+              <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
+                <div className="text-lg font-bold text-white">{bot.messages_count}</div>
+                <div className="text-white/30 text-xs">Сообщения</div>
+              </div>
+              <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
+                <div className="text-lg font-bold text-white">{bot.broadcasts_count}</div>
+                <div className="text-white/30 text-xs">Рассылки</div>
+              </div>
+            </div>
+
+            {/* Referral partners */}
+            {bot.referral_partners?.length > 0 && (
+              <div>
+                <div className="text-white/40 text-xs font-medium mb-3 flex items-center gap-2"><Handshake size={12} /> Реферальные партнёры ({bot.referral_partners.length})</div>
+                <div className="space-y-2">
+                  {bot.referral_partners.map(p => (
+                    <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white/70">{p.user_name || '—'} <span className="text-white/30">{p.user_email}</span></div>
+                        <div className="flex gap-3 text-xs text-white/30 mt-1">
+                          <span>Код: <span className="text-white/50">{p.ref_code}</span></span>
+                          <span>Кредиты: <span className="text-white/50">{p.credits}</span></span>
+                          <span>Сессии: <span className="text-white/50">{p.sessions_count}</span></span>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                        {p.is_active ? 'Активен' : 'Неактивен'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : <div className="text-white/40 text-sm">Не найден</div>}
+      </div>
+    </div>
+  )
+}
+
+function ReferralsTab() {
+  const [partners, setPartners] = useState([])
+  const [total, setTotal] = useState(0)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [cashback, setCashback] = useState({ transactions: [], total: 0 })
+  const [showCashback, setShowCashback] = useState(false)
+  const [cbPage, setCbPage] = useState(0)
+  const [cbLoading, setCbLoading] = useState(false)
+  const limit = 20
+  const cbLimit = 20
+
+  const load = useCallback(() => {
+    setLoading(true)
+    api.get('/api/admin/referrals', { params: { search, limit, offset: page * limit } })
+      .then(r => { setPartners(r.data.partners); setTotal(r.data.total) })
+      .finally(() => setLoading(false))
+  }, [search, page])
+
+  useEffect(() => { load() }, [load])
+
+  const loadCashback = useCallback(() => {
+    setCbLoading(true)
+    api.get('/api/admin/cashback', { params: { limit: cbLimit, offset: cbPage * cbLimit } })
+      .then(r => setCashback(r.data))
+      .finally(() => setCbLoading(false))
+  }, [cbPage])
+
+  useEffect(() => { if (showCashback) loadCashback() }, [showCashback, loadCashback])
+
+  const totalPages = Math.ceil(total / limit)
+  const cbTotalPages = Math.ceil(cashback.total / cbLimit)
+
+  return (
+    <div>
+      {/* Toggle */}
+      <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06] w-fit mb-4">
+        <button onClick={() => setShowCashback(false)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!showCashback ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]' : 'text-white/40 hover:text-white/60'}`}>
+          Партнёры
+        </button>
+        <button onClick={() => setShowCashback(true)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showCashback ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]' : 'text-white/40 hover:text-white/60'}`}>
+          Кэшбэк
+        </button>
+      </div>
+
+      {showCashback ? (
+        /* Cashback transactions */
+        <div>
+          {cbLoading ? (
+            <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+          ) : cashback.transactions.length === 0 ? (
+            <div className="text-center text-white/30 text-sm py-10">Нет транзакций</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-white/30 text-xs border-b border-white/[0.06]">
+                    <th className="text-left py-3 px-3 font-medium">Получатель</th>
+                    <th className="text-left py-3 px-3 font-medium">Источник</th>
+                    <th className="text-left py-3 px-3 font-medium">Сумма</th>
+                    <th className="text-left py-3 px-3 font-medium">Уровень</th>
+                    <th className="text-left py-3 px-3 font-medium">Тип</th>
+                    <th className="text-left py-3 px-3 font-medium">Дата</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cashback.transactions.map(t => (
+                    <tr key={t.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="text-white/70 text-xs">{t.user_name}</div>
+                        <div className="text-white/30 text-xs">{t.user_email}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="text-white/70 text-xs">{t.from_user_name}</div>
+                        <div className="text-white/30 text-xs">{t.from_user_email}</div>
+                      </td>
+                      <td className="py-3 px-3 text-emerald-400 font-medium">{t.amount} ₽</td>
+                      <td className="py-3 px-3 text-white/50">{t.level}</td>
+                      <td className="py-3 px-3 text-white/40 text-xs">{t.source_type}</td>
+                      <td className="py-3 px-3 text-white/30 text-xs">{t.created_at ? new Date(t.created_at).toLocaleString('ru') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {cbTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-xs text-white/30">Всего: {cashback.total}</div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCbPage(Math.max(0, cbPage - 1))} disabled={cbPage === 0}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 disabled:opacity-30 transition-colors">
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-xs text-white/40">{cbPage + 1} / {cbTotalPages}</span>
+                <button onClick={() => setCbPage(Math.min(cbTotalPages - 1, cbPage + 1))} disabled={cbPage >= cbTotalPages - 1}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 disabled:opacity-30 transition-colors">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Partners list */
+        <div>
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(0) }}
+              placeholder="Поиск по имени, email или реф. коду..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+            />
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+          ) : partners.length === 0 ? (
+            <div className="text-center text-white/30 text-sm py-10">Нет партнёров</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-white/30 text-xs border-b border-white/[0.06]">
+                    <th className="text-left py-3 px-3 font-medium">Партнёр</th>
+                    <th className="text-left py-3 px-3 font-medium">Бот</th>
+                    <th className="text-left py-3 px-3 font-medium">Реф. код</th>
+                    <th className="text-left py-3 px-3 font-medium">Кредиты</th>
+                    <th className="text-left py-3 px-3 font-medium">Сессии</th>
+                    <th className="text-left py-3 px-3 font-medium">Статус</th>
+                    <th className="text-left py-3 px-3 font-medium">Дата</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partners.map(p => (
+                    <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="text-white/70 text-xs">{p.user_name || '—'}</div>
+                        <div className="text-white/30 text-xs">{p.user_email}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${p.bot_platform === 'vk' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                            {p.bot_platform === 'vk' ? 'VK' : 'TG'}
+                          </span>
+                          <span className="text-white/50 text-xs">@{p.bot_username || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-white/60 font-mono text-xs">{p.ref_code}</td>
+                      <td className="py-3 px-3 text-white/60">{p.credits}</td>
+                      <td className="py-3 px-3">
+                        <span className="text-white/60">{p.sessions_count}</span>
+                        {p.active_sessions > 0 && <span className="text-emerald-400 text-xs ml-1">({p.active_sessions} акт.)</span>}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                          {p.is_active ? 'Активен' : 'Неактивен'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-white/30 text-xs">{p.created_at ? new Date(p.created_at).toLocaleDateString('ru') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-xs text-white/30">Всего: {total}</div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 disabled:opacity-30 transition-colors">
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-xs text-white/40">{page + 1} / {totalPages}</span>
+                <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page >= totalPages - 1}
+                  className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 disabled:opacity-30 transition-colors">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -667,6 +993,7 @@ export default function AdminPage() {
         {tab === 'users' && <UsersTab />}
         {tab === 'bots' && <BotsTab />}
         {tab === 'chats' && <ChatsTab />}
+        {tab === 'referrals' && <ReferralsTab />}
       </div>
     </div>
   )
