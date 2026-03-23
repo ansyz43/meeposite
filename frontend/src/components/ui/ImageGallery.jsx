@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 
 /**
  * Lightbox-gallery for step-by-step instruction screenshots.
  * Shows thumbnails grid → click opens full-size with prev/next navigation.
+ * Supports touch swipe on mobile.
  */
 export default function ImageGallery({ images, open, onClose, startIndex = 0 }) {
   const [current, setCurrent] = useState(0)
+  const touchRef = useRef({ startX: 0, startY: 0, didSwipe: false })
 
   useEffect(() => {
     if (open) setCurrent(startIndex)
@@ -26,10 +28,49 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose, goNext, goPrev])
 
+  // Prevent body scroll when gallery is open
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
+
+  const onTouchStart = useCallback((e) => {
+    const t = e.touches[0]
+    touchRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false }
+  }, [])
+
+  const onTouchEnd = useCallback((e) => {
+    const t = e.changedTouches[0]
+    const dx = t.clientX - touchRef.current.startX
+    const dy = t.clientY - touchRef.current.startY
+    // Horizontal swipe with minimum 50px threshold
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      touchRef.current.didSwipe = true
+      if (dx < 0) goNext()
+      else goPrev()
+    }
+  }, [goNext, goPrev])
+
+  const handleOverlayClick = useCallback((e) => {
+    // Don't close if user just finished a swipe
+    if (touchRef.current.didSwipe) {
+      touchRef.current.didSwipe = false
+      return
+    }
+    onClose()
+  }, [onClose])
+
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center"
+      onClick={handleOverlayClick}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="relative w-full h-full flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
         {/* Close */}
         <button onClick={onClose} className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer">
@@ -41,9 +82,9 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
           {current + 1} / {images.length}
         </div>
 
-        {/* Prev */}
+        {/* Prev — hidden on mobile, swipe instead */}
         <button onClick={goPrev}
-          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer z-10">
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer z-10 hidden md:flex">
           <ChevronLeft size={24} />
         </button>
 
@@ -51,13 +92,13 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
         <img
           src={images[current].src}
           alt={images[current].alt || `Шаг ${current + 1}`}
-          className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl select-none"
+          className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl select-none pointer-events-none"
           draggable={false}
         />
 
-        {/* Next */}
+        {/* Next — hidden on mobile, swipe instead */}
         <button onClick={goNext}
-          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer z-10">
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer z-10 hidden md:flex">
           <ChevronRight size={24} />
         </button>
 
@@ -68,8 +109,21 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
           </div>
         )}
 
-        {/* Thumbnails */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 max-w-[90vw] overflow-x-auto pb-1 hidden md:flex">
+        {/* Dot indicators on mobile */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 md:hidden">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                i === current ? 'bg-emerald-400 scale-125' : 'bg-white/30'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Thumbnails — desktop only */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 gap-1.5 max-w-[90vw] overflow-x-auto pb-1 hidden md:flex">
           {images.map((img, i) => (
             <button
               key={i}
