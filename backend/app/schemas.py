@@ -269,13 +269,18 @@ class BotPartnerInfo(BaseModel):
     created_at: datetime.datetime
 
 
+class SimpleReferralResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    created_at: datetime.datetime
+
+
 class TreeNodeResponse(BaseModel):
     id: int
     name: str
     email: str
     level: int
-    total_spent: float
-    cashback_earned: float
     joined_at: datetime.datetime
     children: list["TreeNodeResponse"] = []
 

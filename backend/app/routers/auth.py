@@ -16,7 +16,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.database import get_db
-from app.models import User, PasswordResetToken, Bot, ReferralPartner
+from app.models import User, PasswordResetToken
 from app.config import settings
 from app.schemas import (
     RegisterRequest, LoginRequest, TokenResponse,
@@ -28,37 +28,6 @@ from app.auth import hash_password, verify_password, create_access_token, create
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 logger = logging.getLogger(__name__)
-
-
-async def _auto_create_partnership(db, user_id: int, referrer_id: int):
-    """If the referrer has a bot with allow_partners, auto-create a partnership."""
-    result = await db.execute(
-        select(Bot).where(
-            Bot.user_id == referrer_id,
-            Bot.allow_partners == True,
-            Bot.is_active == True,
-        )
-    )
-    bot = result.scalar_one_or_none()
-    if not bot:
-        return
-    # Check not already a partner
-    existing = await db.execute(
-        select(ReferralPartner).where(
-            ReferralPartner.user_id == user_id,
-            ReferralPartner.bot_id == bot.id,
-        )
-    )
-    if existing.scalar_one_or_none():
-        return
-    partner = ReferralPartner(
-        user_id=user_id,
-        bot_id=bot.id,
-        ref_code=secrets.token_urlsafe(6),
-        credits=5,
-    )
-    db.add(partner)
-    await db.flush()
 
 
 def _generate_user_ref_code() -> str:
@@ -123,11 +92,6 @@ async def register(request: Request, data: RegisterRequest, response: Response, 
     db.add(user)
     await db.commit()
     await db.refresh(user)
-
-    # Auto-create partnership if referrer has a bot
-    if referred_by_id:
-        await _auto_create_partnership(db, user.id, referred_by_id)
-        await db.commit()
 
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id)
@@ -322,11 +286,6 @@ async def auth_telegram(
         db.add(user)
         await db.commit()
         await db.refresh(user)
-
-        # Auto-create partnership if referrer has a bot
-        if user.referred_by_id:
-            await _auto_create_partnership(db, user.id, user.referred_by_id)
-            await db.commit()
     elif not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
@@ -414,11 +373,6 @@ async def auth_google(
             db.add(user)
             await db.commit()
             await db.refresh(user)
-
-            # Auto-create partnership if referrer has a bot
-            if user.referred_by_id:
-                await _auto_create_partnership(db, user.id, user.referred_by_id)
-                await db.commit()
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")

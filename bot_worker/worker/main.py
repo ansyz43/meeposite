@@ -18,11 +18,11 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.filters import CommandStart
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update
 
 from worker.config import settings
 from worker.database import async_session
-from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartner, ReferralSession
+from worker.models import Bot as BotModel, User, Contact, Message
 from worker.crypto import decrypt_token
 from worker.ai_service import get_ai_response
 from worker.vk_handler import start_vk_bot as _start_vk_bot
@@ -189,94 +189,6 @@ async def save_phone(session, contact_id: int, phone: str):
     await session.flush()
 
 
-async def get_referral_partner(session, ref_code: str):
-    """Find a referral partner by ref_code."""
-    result = await session.execute(
-        select(ReferralPartner).where(
-            ReferralPartner.ref_code == ref_code,
-            ReferralPartner.is_active == True,
-        )
-    )
-    return result.scalar_one_or_none()
-
-
-async def create_referral_session(session, partner_id: int, contact_id: int, telegram_id: int):
-    """Create a referral session (12h) and deduct a credit atomically."""
-    # Atomic deduction: only succeeds if credits > 0
-    result = await session.execute(
-        update(ReferralPartner)
-        .where(ReferralPartner.id == partner_id, ReferralPartner.credits > 0)
-        .values(credits=ReferralPartner.credits - 1)
-        .returning(ReferralPartner.id)
-    )
-    if not result.scalar_one_or_none():
-        return None
-
-    now = _utcnow()
-    ref_session = ReferralSession(
-        partner_id=partner_id,
-        contact_id=contact_id,
-        telegram_id=telegram_id,
-        started_at=now,
-        expires_at=now + datetime.timedelta(hours=12),
-        is_active=True,
-    )
-    session.add(ref_session)
-    await session.flush()
-    await session.refresh(ref_session)
-    return ref_session
-
-
-async def get_active_referral_session(session, bot_id: int, telegram_id: int):
-    """Find an active, non-expired referral session for this telegram user on this bot."""
-    now = _utcnow()
-    result = await session.execute(
-        select(ReferralSession, ReferralPartner)
-        .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)
-        .where(
-            ReferralPartner.bot_id == bot_id,
-            ReferralSession.telegram_id == telegram_id,
-        )
-        .order_by(ReferralSession.started_at.desc())
-        .limit(1)
-    )
-    row = result.first()
-    if not row:
-        return None, None
-    ref_session, partner = row
-    if not ref_session.is_active or ref_session.expires_at <= now:
-        # Expired or deactivated
-        if ref_session.is_active:
-            ref_session.is_active = False
-            await session.flush()
-        return None, "expired"
-    return ref_session, partner
-
-
-async def deactivate_referral_session(session, session_id: int):
-    """Deactivate a referral session by ID."""
-    await session.execute(
-        update(ReferralSession)
-        .where(ReferralSession.id == session_id)
-        .values(is_active=False)
-    )
-    await session.flush()
-
-
-async def is_referral_user(session, bot_id: int, telegram_id: int) -> bool:
-    """Check if this telegram user has EVER had a referral session on this bot."""
-    result = await session.execute(
-        select(func.count(ReferralSession.id))
-        .join(ReferralPartner, ReferralSession.partner_id == ReferralPartner.id)
-        .where(
-            ReferralPartner.bot_id == bot_id,
-            ReferralSession.telegram_id == telegram_id,
-        )
-    )
-    count = result.scalar() or 0
-    return count > 0
-
-
 def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                       seller_link: str | None, greeting_message: str | None) -> Dispatcher:
     """Create a dispatcher with handlers for a specific bot."""
@@ -299,62 +211,6 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             return
         async with async_session() as db:
             contact = await get_or_create_contact(db, bot_db_id, message.from_user)
-
-            # Check for referral deep link: /start ref_XXXXXXXX
-            args = message.text.split(maxsplit=1)
-            if len(args) > 1 and args[1].startswith("ref_"):
-                ref_code = args[1][4:]  # strip "ref_" prefix
-                partner = await get_referral_partner(db, ref_code)
-                if not partner:
-                    await db.commit()
-                    await message.answer("Ссылка недействительна.")
-                    return
-                if partner.credits <= 0:
-                    await db.commit()
-                    await message.answer("К сожалению, эта ссылка больше недоступна.")
-                    return
-                # Check if this user already has an active session
-                existing_session, existing_partner = await get_active_referral_session(db, bot_db_id, message.from_user.id)
-                if existing_session:
-                    if existing_partner and existing_partner.id == partner.id:
-                        # Same partner — just greet
-                        greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
-                        await save_message(db, contact.id, "assistant", greeting)
-                        await db.commit()
-                        await message.answer(greeting)
-                        return
-                    # Different partner — deactivate old session
-                    await deactivate_referral_session(db, existing_session.id)
-                elif existing_partner == "expired":
-                    pass  # expired session from old partner, allow new one
-                # Create new referral session
-                ref_session = await create_referral_session(db, partner.id, contact.id, message.from_user.id)
-                if not ref_session:
-                    await db.commit()
-                    await message.answer("К сожалению, эта ссылка больше недоступна.")
-                    return
-                logger.info(f"Referral session created: partner #{partner.id}, contact #{contact.id}, expires {ref_session.expires_at}")
-                greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
-                await save_message(db, contact.id, "assistant", greeting)
-                await db.commit()
-                await message.answer(greeting)
-                return
-
-            # Regular /start (no ref code) — check if user is a referral user
-            if await is_referral_user(db, bot_db_id, message.from_user.id):
-                # User came through a ref link before — can't use bot without active session
-                existing_session, _ = await get_active_referral_session(db, bot_db_id, message.from_user.id)
-                if existing_session:
-                    # Still has active session — just greet
-                    greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
-                    await save_message(db, contact.id, "assistant", greeting)
-                    await db.commit()
-                    await message.answer(greeting)
-                else:
-                    await db.commit()
-                    await message.answer("Ваша сессия завершена. Для продолжения попросите новую ссылку у вашего продавца.")
-                return
-
             greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
             await save_message(db, contact.id, "assistant", greeting)
             await db.commit()
@@ -379,18 +235,6 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
             contact = await get_or_create_contact(db, bot_db_id, message.from_user)
             user_text = message.text
 
-            # Check for active referral session — use partner's seller_link if active
-            active_seller_link = seller_link
-            ref_session, ref_data = await get_active_referral_session(db, bot_db_id, message.from_user.id)
-            if ref_data == "expired":
-                # Referral user with expired session — block
-                await db.commit()
-                await message.answer("Ваша сессия завершена. Для продолжения попросите новую ссылку у вашего продавца.")
-                return
-            if ref_session and ref_data:
-                # Active referral session — use partner's seller_link
-                active_seller_link = ref_data.seller_link
-
             # Save user message
             await save_message(db, contact.id, "user", user_text)
 
@@ -414,7 +258,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                 async with _ai_semaphore:
                     ai_response = await asyncio.wait_for(
                         get_ai_response(
-                            assistant_name, seller_name, bool(active_seller_link),
+                            assistant_name, seller_name, bool(seller_link),
                             history, user_text,
                         ),
                         timeout=60.0,
@@ -445,8 +289,8 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
-        if active_seller_link and '[ССЫЛКА]' in ai_response:
-            ai_response = ai_response.replace('[ССЫЛКА]', active_seller_link)
+        if seller_link and '[ССЫЛКА]' in ai_response:
+            ai_response = ai_response.replace('[ССЫЛКА]', seller_link)
             link_was_sent = True
 
         # Save AI response in a new short session

@@ -9,7 +9,6 @@ import BotPage from './pages/BotPage'
 import Conversations from './pages/Conversations'
 import Contacts from './pages/Contacts'
 import Profile from './pages/Profile'
-import CatalogPage from './pages/CatalogPage'
 import PartnerPage from './pages/PartnerPage'
 import BroadcastPage from './pages/BroadcastPage'
 import ResetPassword from './pages/ResetPassword'
@@ -64,7 +63,6 @@ export default function App() {
           <Route path="bot" element={<BotPage />} />
           <Route path="conversations" element={<Conversations />} />
           <Route path="contacts" element={<Contacts />} />
-          <Route path="catalog" element={<CatalogPage />} />
           <Route path="partner" element={<PartnerPage />} />
           <Route path="broadcast" element={<BroadcastPage />} />
           <Route path="profile" element={<Profile />} />
