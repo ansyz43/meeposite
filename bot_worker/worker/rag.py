@@ -137,6 +137,7 @@ class _KBData:
         self.intake: str = ""
         self.business: str = ""
         self.reviews: str = ""
+        self.prices: str = ""
         self.raw: str = ""
 
 
@@ -197,6 +198,8 @@ def _parse_kb(text: str) -> _KBData:
             kb.business = chunk
         elif '## Отзывы спортсменов' in chunk:
             kb.reviews = chunk
+        elif '## Прайс-лист FitLine' in chunk:
+            kb.prices = chunk
 
     return kb
 
@@ -325,6 +328,14 @@ def select_relevant_kb(user_message: str, chat_history: list[dict] | None = None
     proof_words = {"доказ", "исследован", "спортсмен", "олимп", "отзыв"}
     wants_reviews = bool(expanded & proof_words)
 
+    price_words = {"цен", "стоимост", "сколько", "дорого", "скидк", "прайс", "рубл", "почём", "почем", "стоит"}
+    wants_prices = any(
+        pw in w or w in pw
+        for w in expanded
+        for pw in price_words
+        if len(w) >= 3
+    )
+
     # ─── Assemble output ───
     parts = [_COMPACT_HEADER]
 
@@ -356,5 +367,9 @@ def select_relevant_kb(user_message: str, chat_history: list[dict] | None = None
     # Reviews (only if proof/sports mentioned)
     if wants_reviews and kb.reviews:
         parts.append(kb.reviews)
+
+    # Prices (when user asks about cost/price)
+    if wants_prices and kb.prices:
+        parts.append(kb.prices)
 
     return "\n\n---\n\n".join(parts)
