@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../api'
-import { Bot, Copy, Check, Save, Trash2, Plus, Camera, Users, PlusCircle, Link2, ExternalLink, Settings, MessageCircle, Handshake } from 'lucide-react'
+import { Bot, Copy, Check, Save, Trash2, Plus, Camera, Users, PlusCircle, Link2, ExternalLink, Settings, MessageCircle, Handshake, ZoomIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/ui/PageHeader'
 import Loader from '../components/ui/Loader'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import TelegramGroupPopup from '../components/ui/TelegramGroupPopup'
+import ImageGallery, { InstructionStep } from '../components/ui/ImageGallery'
 
 // VK icon as inline SVG
 function VkIcon({ size = 18, className = '' }) {
@@ -40,6 +41,8 @@ export default function BotPage() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [showDisconnect, setShowDisconnect] = useState(false)
   const [showTgGroup, setShowTgGroup] = useState(false)
+  const [showVkGuide, setShowVkGuide] = useState(false)
+  const [vkGuideStart, setVkGuideStart] = useState(0)
   const fileInputRef = useRef(null)
 
   // Partners
@@ -598,16 +601,43 @@ export default function BotPage() {
             </div>
 
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
-              <p className="text-sm text-blue-400 font-medium mb-2">Перед подключением:</p>
-              <ol className="text-xs text-white/50 space-y-1.5 list-decimal list-inside">
-                <li>Откройте ваше сообщество → <b className="text-white/70">Управление</b> (шестерёнка справа)</li>
-                <li><b className="text-white/70">Сообщения</b> → включите <b className="text-white/70">«Сообщения сообщества»</b></li>
-                <li><b className="text-white/70">Настройки</b> → <b className="text-white/70">Работа с API</b></li>
-                <li>Вкладка <b className="text-white/70">Long Poll API</b> → включите, версия <b className="text-white/70">5.199</b></li>
-                <li>Вкладка <b className="text-white/70">Типы событий</b> → отметьте <b className="text-white/70">«Входящее сообщение»</b></li>
-                <li>Вкладка <b className="text-white/70">Ключи доступа</b> → <b className="text-white/70">Создать ключ</b> → права на <b className="text-white/70">сообщения</b></li>
-                <li>ID сообщества — число из адресной строки (vk.com/club<b className="text-white/70">123456789</b>) или из раздела <b className="text-white/70">Работа с API</b></li>
-              </ol>
+              <p className="text-sm text-blue-400 font-medium mb-3">Перед подключением:</p>
+              <div className="space-y-3">
+                {[
+                  { n: 1, title: 'Откройте сообщество → Управление', desc: 'Нажмите шестерёнку справа от названия', img: '/vk-guide/1.png' },
+                  { n: 2, title: 'Сообщения → включите «Сообщения сообщества»', desc: null, img: '/vk-guide/2.png' },
+                  { n: 3, title: 'Настройки для бота → включите возможности бота', desc: 'Добавьте кнопку «Начать» и сохраните', imgs: ['/vk-guide/3.png', '/vk-guide/4.png'] },
+                  { n: 4, title: 'Работа с API → Создать ключ доступа', desc: null, img: '/vk-guide/5.png' },
+                  { n: 5, title: 'Выберите все разрешения при создании ключа', desc: null, img: '/vk-guide/6.png' },
+                  { n: 6, title: 'Скопируйте созданный ключ → вставьте в поле «Токен сообщества»', desc: null, img: '/vk-guide/7.png' },
+                  { n: 7, title: 'Вкладка Long Poll API → включите', desc: null, img: '/vk-guide/8.png' },
+                  { n: 8, title: 'Типы событий → отметьте «Входящее сообщение»', desc: null, imgs: ['/vk-guide/9.png', '/vk-guide/10.png'] },
+                  { n: 9, title: 'Скопируйте цифры после «club» на странице настроек', desc: 'Вставьте их в поле «ID сообщества»', imgs: ['/vk-guide/11.png', '/vk-guide/12.png', '/vk-guide/13.png'] },
+                ].map(step => (
+                  <InstructionStep
+                    key={step.n}
+                    number={step.n}
+                    title={step.title}
+                    description={step.desc}
+                    image={step.img || (step.imgs && step.imgs[0])}
+                    onImageClick={() => {
+                      const allImages = [1,2,3,4,5,6,7,8,9,10,11,12,13].map(i => ({
+                        src: `/vk-guide/${i}.png`,
+                        alt: `Шаг ${i}`,
+                      }))
+                      const idx = step.img
+                        ? parseInt(step.img.match(/(\d+)\.png/)[1]) - 1
+                        : parseInt(step.imgs[0].match(/(\d+)\.png/)[1]) - 1
+                      setVkGuideStart(idx)
+                      setShowVkGuide(true)
+                    }}
+                  />
+                ))}
+              </div>
+              <button type="button" onClick={() => { setVkGuideStart(0); setShowVkGuide(true) }}
+                className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl py-2.5 transition-colors cursor-pointer">
+                <ZoomIn size={16} /> Открыть все скриншоты
+              </button>
             </div>
 
             <button type="submit" disabled={vkConnecting}
@@ -618,6 +648,31 @@ export default function BotPage() {
             </button>
           </form>
         </div>
+
+        <ImageGallery
+          open={showVkGuide}
+          onClose={() => setShowVkGuide(false)}
+          startIndex={vkGuideStart}
+          images={[1,2,3,4,5,6,7,8,9,10,11,12,13].map(i => ({
+            src: `/vk-guide/${i}.png`,
+            alt: `Шаг ${i}`,
+            caption: [
+              'Откройте сообщество → Управление',
+              'Сообщения → включите сообщения сообщества',
+              'Настройки для бота → возможности бота',
+              'Добавьте кнопку «Начать» и сохраните',
+              'Работа с API → Создать ключ доступа',
+              'Выберите все разрешения',
+              'Скопируйте созданный ключ → вставьте в поле «Токен»',
+              'Long Poll API → включите',
+              'Типы событий → входящее сообщение',
+              'Отметьте нужные события',
+              'Найдите цифры после «club»',
+              'Скопируйте ID сообщества',
+              'Вставьте ID на сайте и нажмите «Подключить»',
+            ][i - 1],
+          }))}
+        />
       </div>
     )
   }
