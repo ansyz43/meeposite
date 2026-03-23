@@ -508,7 +508,6 @@ function BotDetailModal({ botId, onClose }) {
               </div>
             </div>
 
-            </div>
           </div>
         ) : <div className="text-white/40 text-sm">Не найден</div>}
       </div>
