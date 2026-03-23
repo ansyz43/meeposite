@@ -271,6 +271,98 @@ async def admin_delete_bot(
 
 
 # ─── Conversations ───────────────────────────────────
+@router.get("/conversations")
+async def admin_list_conversations(
+    admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    search: str = Query("", max_length=100),
+    platform: str = Query("", max_length=10),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List all conversations across all users (admin only)."""
+    query = select(Contact).where(Contact.message_count > 0)
+    count_query = select(func.count(Contact.id)).where(Contact.message_count > 0)
+
+    if platform in ("telegram", "vk"):
+        query = query.where(Contact.platform == platform)
+        count_query = count_query.where(Contact.platform == platform)
+
+    if search:
+        safe = search.replace("%", "\\%").replace("_", "\\_")
+        like = f"%{safe}%"
+        flt = or_(
+            Contact.first_name.ilike(like),
+            Contact.last_name.ilike(like),
+            Contact.telegram_username.ilike(like),
+        )
+        query = query.where(flt)
+        count_query = count_query.where(flt)
+
+    total = (await db.execute(count_query)).scalar() or 0
+
+    result = await db.execute(
+        query.order_by(Contact.last_message_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    contacts = result.scalars().all()
+
+    # Batch fetch last messages
+    contact_ids = [c.id for c in contacts]
+    last_messages = {}
+    if contact_ids:
+        last_msg_sq = (
+            select(
+                Message.contact_id,
+                func.max(Message.id).label("last_msg_id"),
+            )
+            .where(Message.contact_id.in_(contact_ids))
+            .group_by(Message.contact_id)
+            .subquery()
+        )
+        msg_result = await db.execute(
+            select(Message)
+            .join(last_msg_sq, Message.id == last_msg_sq.c.last_msg_id)
+        )
+        for msg in msg_result.scalars().all():
+            last_messages[msg.contact_id] = msg.content[:100] if msg.content else None
+
+    # Batch fetch bot owner info
+    bot_ids = list({c.bot_id for c in contacts})
+    bot_owners = {}
+    if bot_ids:
+        bots_result = await db.execute(
+            select(Bot).options(selectinload(Bot.owner)).where(Bot.id.in_(bot_ids))
+        )
+        for b in bots_result.scalars().all():
+            bot_owners[b.id] = {
+                "bot_username": b.bot_username,
+                "owner_name": b.owner.name if b.owner else None,
+                "owner_email": b.owner.email if b.owner else None,
+            }
+
+    conversations = []
+    for c in contacts:
+        owner_info = bot_owners.get(c.bot_id, {})
+        conversations.append({
+            "contact_id": c.id,
+            "platform": c.platform,
+            "telegram_username": c.telegram_username,
+            "first_name": c.first_name,
+            "last_name": c.last_name,
+            "last_message": last_messages.get(c.id),
+            "last_message_at": c.last_message_at.isoformat() if c.last_message_at else None,
+            "message_count": c.message_count,
+            "link_sent": c.link_sent,
+            "bot_username": owner_info.get("bot_username"),
+            "owner_name": owner_info.get("owner_name"),
+            "owner_email": owner_info.get("owner_email"),
+        })
+
+    return {"conversations": conversations, "total": total}
+
+
 @router.get("/conversations/{contact_id}")
 async def admin_view_conversation(
     contact_id: int,
