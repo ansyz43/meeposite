@@ -290,17 +290,27 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
         if seller_link and '[ССЫЛКА]' in ai_response:
-            ai_response = ai_response.replace('[ССЫЛКА]', seller_link)
+            # Split response: send text and link as separate messages
+            parts = ai_response.split('[ССЫЛКА]')
+            text_before = parts[0].rstrip(" \u2014-\n")
+            text_after = '[ССЫЛКА]'.join(parts[1:]).lstrip(" \u2014-\n") if len(parts) > 1 else ''
+            ai_response = text_before
             link_was_sent = True
 
         # Save AI response in a new short session
         async with async_session() as db:
-            await save_message(db, contact.id, "assistant", ai_response)
+            full_text = f"{ai_response}\n{seller_link}" if link_was_sent else ai_response
+            await save_message(db, contact.id, "assistant", full_text)
             if link_was_sent:
                 from sqlalchemy import update
                 await db.execute(update(Contact).where(Contact.id == contact.id).values(link_sent=True))
             await db.commit()
-        await message.answer(ai_response)
+        if ai_response.strip():
+            await message.answer(ai_response)
+        if link_was_sent:
+            await message.answer(seller_link)
+        if link_was_sent and text_after.strip():
+            await message.answer(text_after)
 
     return dp
 

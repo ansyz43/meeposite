@@ -426,7 +426,7 @@ export default function BotPage() {
 
             <div>
               <label className="block text-sm text-white/60 mb-1.5">Ваша ссылка</label>
-              <input type="url" value={sellerLink} onChange={e => setSellerLink(e.target.value)}
+              <input type="text" value={sellerLink} onChange={e => setSellerLink(e.target.value)}
                 className="input-field" placeholder="https://your-link.com" />
               <p className="text-xs text-white/30 mt-1">Бот будет давать эту ссылку заинтересованным клиентам</p>
             </div>
@@ -754,7 +754,7 @@ export default function BotPage() {
 
           <div>
             <label className="block text-sm text-white/60 mb-1.5">Ваша ссылка</label>
-            <input type="url" value={vkSellerLink} onChange={e => setVkSellerLink(e.target.value)}
+            <input type="text" value={vkSellerLink} onChange={e => setVkSellerLink(e.target.value)}
               className="input-field" placeholder="https://your-link.com" />
             <p className="text-xs text-white/30 mt-1">Бот будет давать эту ссылку заинтересованным клиентам</p>
           </div>

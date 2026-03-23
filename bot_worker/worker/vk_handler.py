@@ -231,13 +231,18 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
 
         # Replace [ССЫЛКА] placeholder
         link_was_sent = False
+        text_after = ''
         if seller_link and '[ССЫЛКА]' in ai_response:
-            ai_response = ai_response.replace('[ССЫЛКА]', seller_link)
+            parts = ai_response.split('[ССЫЛКА]')
+            text_before = parts[0].rstrip(' \u2014-\n')
+            text_after = '[ССЫЛКА]'.join(parts[1:]).lstrip(' \u2014-\n') if len(parts) > 1 else ''
+            ai_response = text_before
             link_was_sent = True
 
         # Save AI response
         async with async_session() as db:
-            await save_message(db, contact.id, "assistant", ai_response)
+            full_text = f"{ai_response}\n{seller_link}" if link_was_sent else ai_response
+            await save_message(db, contact.id, "assistant", full_text)
             if link_was_sent:
                 await db.execute(
                     sa_update(Contact).where(Contact.id == contact.id).values(link_sent=True)
@@ -245,11 +250,26 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
             await db.commit()
 
         # Send via VK
-        await _vk_api(
-            http, "messages.send", token,
-            peer_id=peer_id,
-            message=ai_response,
-            random_id=random.randint(1, 2**31),
-        )
+        if ai_response.strip():
+            await _vk_api(
+                http, "messages.send", token,
+                peer_id=peer_id,
+                message=ai_response,
+                random_id=random.randint(1, 2**31),
+            )
+        if link_was_sent:
+            await _vk_api(
+                http, "messages.send", token,
+                peer_id=peer_id,
+                message=seller_link,
+                random_id=random.randint(1, 2**31),
+            )
+        if link_was_sent and text_after.strip():
+            await _vk_api(
+                http, "messages.send", token,
+                peer_id=peer_id,
+                message=text_after,
+                random_id=random.randint(1, 2**31),
+            )
     except Exception as e:
         logger.error(f"[VK_BOT#{bot_db_id}] Error handling message from {from_id}: {e}", exc_info=True)
