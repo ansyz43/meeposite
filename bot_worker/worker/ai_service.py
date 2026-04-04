@@ -211,7 +211,7 @@ async def get_ai_response(
             prompt_t = response.usage.prompt_tokens
             compl_t = response.usage.completion_tokens
             total_t = response.usage.total_tokens
-            cost = (prompt_t * 2.5 + compl_t * 15.0) / 1_000_000
+            cost = (prompt_t * 0.75 + compl_t * 4.5) / 1_000_000
             logger.info(
                 f"[{MODEL}] Tokens: {prompt_t} in / {compl_t} out / {total_t} total | cost ~${cost:.4f}"
             )

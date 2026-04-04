@@ -19,10 +19,13 @@ router = APIRouter(prefix="/api", tags=["conversations"])
 
 
 async def _get_bot_ids(user: User, db: AsyncSession) -> list[int]:
-    """Get all bot IDs for the current user (across all platforms)."""
-    result = await db.execute(
-        select(Bot.id).where(Bot.user_id == user.id)
-    )
+    """Get all bot IDs for the current user, or ALL bots if admin."""
+    if user.is_admin:
+        result = await db.execute(select(Bot.id))
+    else:
+        result = await db.execute(
+            select(Bot.id).where(Bot.user_id == user.id)
+        )
     ids = [row[0] for row in result.all()]
     if not ids:
         raise HTTPException(status_code=404, detail="No bot connected")

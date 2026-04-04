@@ -17,6 +17,7 @@ import sentry_sdk
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
+from aiogram.exceptions import TelegramConflictError, TelegramUnauthorizedError
 from aiogram.filters import CommandStart
 from sqlalchemy import select, update
 
@@ -319,15 +320,16 @@ async def start_bot(bot_record: BotModel, seller_name: str):
     """Start polling for a single bot."""
     retry_delay = 5
     max_retry_delay = 60
+    bot_instance = None
     while True:
         try:
             token = decrypt_token(bot_record.bot_token_encrypted)
             if settings.TELEGRAM_API_URL:
                 tg_server = TelegramAPIServer.from_base(settings.TELEGRAM_API_URL)
                 session = AiohttpSession(api=tg_server)
-                bot = Bot(token=token, session=session)
+                bot_instance = Bot(token=token, session=session)
             else:
-                bot = Bot(token=token)
+                bot_instance = Bot(token=token)
             dp = create_dispatcher(
                 bot_db_id=bot_record.id,
                 assistant_name=bot_record.assistant_name,
@@ -338,15 +340,30 @@ async def start_bot(bot_record: BotModel, seller_name: str):
 
             logger.info(f"Starting bot #{bot_record.id} (@{bot_record.bot_username})")
             retry_delay = 5  # reset on successful connect
-            await dp.start_polling(bot, handle_signals=False, polling_timeout=15)
+            await dp.start_polling(bot_instance, handle_signals=False, polling_timeout=15)
         except asyncio.CancelledError:
-            logger.info(f"Bot #{bot_record.id} stopped")
+            logger.info(f"Bot #{bot_record.id} stopped (cancelled)")
+            return
+        except (TelegramConflictError, TelegramUnauthorizedError) as e:
+            # Fatal: another instance running or token revoked — do NOT retry
+            logger.warning(f"Bot #{bot_record.id} fatal error, exiting: {e}")
             return
         except Exception as e:
             logger.error(f"Bot #{bot_record.id} error: {e}")
             logger.info(f"Bot #{bot_record.id} retrying in {retry_delay}s...")
-            await asyncio.sleep(retry_delay)
+            try:
+                await asyncio.sleep(retry_delay)
+            except asyncio.CancelledError:
+                logger.info(f"Bot #{bot_record.id} stopped during retry")
+                return
             retry_delay = min(retry_delay * 2, max_retry_delay)
+        finally:
+            if bot_instance:
+                try:
+                    await bot_instance.session.close()
+                except Exception:
+                    pass
+                bot_instance = None
 
 
 async def sync_bots():
@@ -377,6 +394,10 @@ async def sync_bots():
             logger.info(f"Settings changed for bot #{bot_record.id}, restarting...")
             _, _, old_task = active_bots[bot_record.id]
             old_task.cancel()
+            try:
+                await asyncio.wait_for(asyncio.shield(old_task), timeout=10.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+                pass  # old task is dead or timed out — safe to proceed
             if bot_record.platform == "vk":
                 task = asyncio.create_task(_start_vk_bot(bot_record, user_record.name))
             else:
@@ -390,6 +411,10 @@ async def sync_bots():
         logger.info(f"Stopping bot #{bot_id} (deactivated or removed)")
         _, _, task = active_bots[bot_id]
         task.cancel()
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=10.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+            pass
         del active_bots[bot_id]
         bot_settings_hash.pop(bot_id, None)
 
