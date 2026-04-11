@@ -232,7 +232,10 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
         # Replace [ССЫЛКА] placeholder
         link_was_sent = False
         text_after = ''
-        if seller_link and '[ССЫЛКА]' in ai_response:
+        if not seller_link and '[ССЫЛКА]' in ai_response:
+            # Safety: strip raw [ССЫЛКА] markers if no seller link configured
+            ai_response = ai_response.replace('[ССЫЛКА]', '').strip()
+        elif seller_link and '[ССЫЛКА]' in ai_response:
             parts = ai_response.split('[ССЫЛКА]')
             text_before = parts[0].rstrip(' \u2014-\n')
             text_after = '[ССЫЛКА]'.join(parts[1:]).lstrip(' \u2014-\n') if len(parts) > 1 else ''

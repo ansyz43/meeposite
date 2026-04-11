@@ -290,7 +290,10 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
-        if seller_link and '[ССЫЛКА]' in ai_response:
+        if not seller_link and '[ССЫЛКА]' in ai_response:
+            # Safety: strip raw [ССЫЛКА] markers if no seller link configured
+            ai_response = ai_response.replace('[ССЫЛКА]', '').strip()
+        elif seller_link and '[ССЫЛКА]' in ai_response:
             # Split response: send text and link as separate messages
             parts = ai_response.split('[ССЫЛКА]')
             text_before = parts[0].rstrip(" \u2014-\n")
@@ -339,8 +342,17 @@ async def start_bot(bot_record: BotModel, seller_name: str):
             )
 
             logger.info(f"Starting bot #{bot_record.id} (@{bot_record.bot_username})")
+            logger.info("Start polling")
             retry_delay = 5  # reset on successful connect
-            await dp.start_polling(bot_instance, handle_signals=False, polling_timeout=15)
+            # Use _polling directly instead of start_polling to prevent
+            # orphan polling tasks on cancel (zombie bot fix)
+            allowed_updates = dp.resolve_used_update_types()
+            await dp._polling(
+                bot=bot_instance,
+                handle_as_tasks=True,
+                polling_timeout=15,
+                allowed_updates=allowed_updates,
+            )
         except asyncio.CancelledError:
             logger.info(f"Bot #{bot_record.id} stopped (cancelled)")
             return
