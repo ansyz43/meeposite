@@ -1,0 +1,8 @@
+﻿ssh : Connection to 5.42.112.91 closed by remote host.
+строка:1 знак:1
++ ssh root@5.42.112.91 "docker exec meeposite-db-1 psql -U meepo -d mee ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Connection to 5...by remote host. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

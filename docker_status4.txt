@@ -1,0 +1,5 @@
+meeposite-bot_worker-1 Up 3 hours (healthy)
+meeposite-backend-1 Up 4 hours (healthy)
+meeposite-frontend-1 Up 4 hours
+meeposite-nginx-1 Up 31 hours
+meeposite-db-1 Up 31 hours (healthy)

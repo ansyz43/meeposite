@@ -163,3 +163,89 @@ class CashbackTransaction(Base):
 
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
     from_user: Mapped["User"] = relationship("User", foreign_keys=[from_user_id])
+
+
+# ── Content Plan ─────────────────────────────────────────────
+
+class ContentProfile(Base):
+    """User's content marketing profile — niche, tone, target audience."""
+    __tablename__ = "content_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    niche: Mapped[str] = mapped_column(String(255), nullable=False)  # "wellness", "beauty"
+    platforms: Mapped[str] = mapped_column(Text, nullable=False, default="instagram,telegram")  # comma-separated
+    tone: Mapped[str] = mapped_column(String(100), nullable=False, default="friendly")
+    target_audience: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    topics: Mapped[str] = mapped_column(Text, nullable=False, default="")  # comma-separated
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, onupdate=func.now())
+
+    user: Mapped["User"] = relationship("User")
+    competitor_sources: Mapped[list["CompetitorSource"]] = relationship("CompetitorSource", back_populates="profile", cascade="all, delete-orphan")
+
+
+class CompetitorSource(Base):
+    """A competitor channel/account tracked by user."""
+    __tablename__ = "competitor_sources"
+    __table_args__ = (UniqueConstraint("profile_id", "platform", "channel_username", name="uq_comp_profile_chan"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("content_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)  # "telegram" | "instagram"
+    channel_username: Mapped[str] = mapped_column(String(255), nullable=False)  # "@channel" or "username"
+    channel_title: Mapped[str | None] = mapped_column(String(255))
+    last_parsed_at: Mapped[datetime.datetime | None] = mapped_column(DateTime)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    profile: Mapped["ContentProfile"] = relationship("ContentProfile", back_populates="competitor_sources")
+
+
+class CompetitorPost(Base):
+    """Cached parsed post from a competitor channel. Shared across users."""
+    __tablename__ = "competitor_posts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    channel_username: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    views: Mapped[int | None] = mapped_column(Integer)
+    reactions: Mapped[int | None] = mapped_column(Integer)
+    posted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime)
+    parsed_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class ContentPlan(Base):
+    """A generated content plan."""
+    __tablename__ = "content_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)  # "instagram" | "telegram"
+    period_days: Mapped[int] = mapped_column(Integer, default=7)
+    status: Mapped[str] = mapped_column(String(20), default="generating")  # generating | ready | error
+    error_message: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped["User"] = relationship("User")
+    items: Mapped[list["ContentPlanItem"]] = relationship("ContentPlanItem", back_populates="plan", cascade="all, delete-orphan", order_by="ContentPlanItem.day_number")
+
+
+class ContentPlanItem(Base):
+    """A single post in a content plan."""
+    __tablename__ = "content_plan_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan_id: Mapped[int] = mapped_column(Integer, ForeignKey("content_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    day_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    post_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "пост" | "сторис" | "рилс" | "карусель"
+    topic: Mapped[str] = mapped_column(String(255), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    hashtags: Mapped[str | None] = mapped_column(Text)
+    best_time: Mapped[str | None] = mapped_column(String(20))  # "09:00"
+    is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    plan: Mapped["ContentPlan"] = relationship("ContentPlan", back_populates="items")

@@ -1,0 +1,14 @@
+ id |   first_name    | message_count |   role    | cnt | total_chars 
+----+-----------------+---------------+-----------+-----+-------------
+ 34 | Irina Batorovna |             5 | assistant |   5 |        1258
+ 34 | Irina Batorovna |             5 | user      |   4 |          70
+ 36 | Максим          |             6 | assistant |   6 |        1595
+ 36 | Максим          |             6 | user      |   4 |          68
+ 38 | Анна            |             8 | assistant |   8 |        2187
+ 38 | Анна            |             8 | user      |   7 |          96
+ 39 | Алена           |            38 | assistant |  38 |       15709
+ 39 | Алена           |            38 | user      |  37 |         426
+ 40 | Irina           |             5 | assistant |   5 |        1612
+ 40 | Irina           |             5 | user      |   4 |          97
+(10 rows)
+

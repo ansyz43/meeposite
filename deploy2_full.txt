@@ -1,0 +1,153 @@
+ Image meeposite-bot_worker Building 
+ Image meeposite-frontend Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.21kB done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 579B done
+#2 DONE 0.0s
+
+#3 [bot_worker internal] load build definition from Dockerfile
+#3 transferring dockerfile: 198B done
+#3 DONE 0.0s
+
+#4 [bot_worker internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.9s
+
+#5 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 0.9s
+
+#6 [bot_worker internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [frontend internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.1s
+
+#8 [bot_worker 1/5] FROM docker.io/library/python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4
+#8 resolve docker.io/library/python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4 0.0s done
+#8 DONE 0.0s
+
+#9 [bot_worker internal] load build context
+#9 transferring context: 27.81kB done
+#9 DONE 0.1s
+
+#10 [frontend internal] load build context
+#10 DONE 0.0s
+
+#11 [frontend build 1/6] FROM docker.io/library/node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa
+#11 resolve docker.io/library/node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa
+#11 resolve docker.io/library/node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa 0.0s done
+#11 DONE 0.0s
+
+#12 [bot_worker 2/5] WORKDIR /app
+#12 CACHED
+
+#13 [bot_worker 3/5] COPY requirements.txt .
+#13 CACHED
+
+#14 [bot_worker 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#14 CACHED
+
+#15 [bot_worker 5/5] COPY . .
+#15 DONE 0.1s
+
+#10 [frontend internal] load build context
+#10 transferring context: 42.34kB 0.0s done
+#10 DONE 0.1s
+
+#16 [frontend build 2/6] WORKDIR /app
+#16 CACHED
+
+#17 [frontend build 3/6] COPY package.json .
+#17 CACHED
+
+#18 [frontend build 4/6] RUN npm install
+#18 CACHED
+
+#19 [frontend build 5/6] COPY . .
+#19 DONE 0.1s
+
+#20 [bot_worker] exporting to image
+#20 exporting layers 0.1s done
+#20 exporting manifest sha256:95b71b9370349e36ef1ed25e1953a519389b02d9bc63b42c31e78e588c69eee5 0.0s done
+#20 exporting config sha256:9c8a712f96a96836215c5bfd1f0d8e935cb3e8293a556bc8b3284e209fca5c26 0.0s done
+#20 exporting attestation manifest sha256:42e2ed4173f367c8332a819151a5948364fdaf3537c0bad4f8a007509483c123
+#20 exporting attestation manifest sha256:42e2ed4173f367c8332a819151a5948364fdaf3537c0bad4f8a007509483c123 0.0s done
+#20 exporting manifest list sha256:b26407766da67958db0075617f0662c80b75ef86f6c9c009c34a77ca452f7ac2 0.0s done
+#20 naming to docker.io/library/meeposite-bot_worker:latest done
+#20 unpacking to docker.io/library/meeposite-bot_worker:latest 0.0s done
+#20 DONE 0.3s
+
+#21 [frontend build 6/6] RUN npm run build
+#21 ...
+
+#22 [bot_worker] resolving provenance for metadata file
+#22 DONE 0.0s
+
+#21 [frontend build 6/6] RUN npm run build
+#21 0.499 
+#21 0.499 > meepo-frontend@1.0.0 build
+#21 0.499 > vite build
+#21 0.499 
+#21 0.866 vite v5.4.21 building for production...
+#21 0.939 transforming...
+#21 2.607 ✓ 14 modules transformed.
+#21 2.613 x Build failed in 1.71s
+#21 2.613 error during build:
+#21 2.613 [vite:esbuild] Transform failed with 1 error:
+#21 2.613 /app/src/pages/AdminPage.jsx:512:16: ERROR: Unterminated regular expression
+#21 2.613 file: /app/src/pages/AdminPage.jsx:512:16
+#21 2.613 
+#21 2.613 Unterminated regular expression
+#21 2.613 510|  
+#21 2.613 511|              </div>
+#21 2.613 512|            </div>
+#21 2.613    |                  ^
+#21 2.613 513|          ) : <div className="text-white/40 text-sm">Не найден</div>}
+#21 2.613 514|        </div>
+#21 2.613 
+#21 2.613     at failureErrorWithLog (/app/node_modules/esbuild/lib/main.js:1472:15)
+#21 2.613     at /app/node_modules/esbuild/lib/main.js:755:50
+#21 2.613     at responseCallbacks.<computed> (/app/node_modules/esbuild/lib/main.js:622:9)
+#21 2.613     at handleIncomingPacket (/app/node_modules/esbuild/lib/main.js:677:12)
+#21 2.613     at Socket.readFromStdout (/app/node_modules/esbuild/lib/main.js:600:7)
+#21 2.613     at Socket.emit (node:events:524:28)
+#21 2.613     at addChunk (node:internal/streams/readable:561:12)
+#21 2.613     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+#21 2.613     at Readable.push (node:internal/streams/readable:392:5)
+#21 2.613     at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+#21 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [frontend build 6/6] RUN npm run build:
+2.613     at failureErrorWithLog (/app/node_modules/esbuild/lib/main.js:1472:15)
+2.613     at /app/node_modules/esbuild/lib/main.js:755:50
+2.613     at responseCallbacks.<computed> (/app/node_modules/esbuild/lib/main.js:622:9)
+2.613     at handleIncomingPacket (/app/node_modules/esbuild/lib/main.js:677:12)
+2.613     at Socket.readFromStdout (/app/node_modules/esbuild/lib/main.js:600:7)
+2.613     at Socket.emit (node:events:524:28)
+2.613     at addChunk (node:internal/streams/readable:561:12)
+2.613     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2.613     at Readable.push (node:internal/streams/readable:392:5)
+2.613     at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+------
+Dockerfile:14
+
+--------------------
+
+  12 |     ENV VITE_TELEGRAM_BOT_NAME=$VITE_TELEGRAM_BOT_NAME
+
+  13 |     ENV VITE_TELEGRAM_BOT_ID=$VITE_TELEGRAM_BOT_ID
+
+  14 | >>> RUN npm run build
+
+  15 |     
+
+  16 |     FROM node:20-alpine
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+

@@ -1,0 +1,34 @@
+ id | name | email | ref_code | credits | is_active 
+----+------+-------+----------+---------+-----------
+(0 rows)
+
+---SESSIONS---
+Connection to 5.42.112.91 closed by remote host.
+---USERS---
+ id |          name          |           email            | ref_code | referred_by_id 
+----+------------------------+----------------------------+----------+----------------
+ 10 | Сергей Гордеев         | kisuke43@gmail.com         | U27533HP |               
+ 13 | sergey                 | sergeiaitime@gmail.com     | 5tHKbyXR |               
+ 14 | Сергей                 | tg_458500773@telegram.user | 7hyAPt28 |               
+ 15 | Инна • Долкар Доржиева | tg_456598810@telegram.user | 7WGieEw4 |               
+ 16 | Булат Итыгилов         | lst63.salamander@gmail.com | CIGJwqK8 |               
+ 17 | Тамара Васильева       | tg_364230803@telegram.user | CO1zau_N |             15
+ 18 | Людмила Шабаганова     | lshabaganova@yandex.ru     | AJsrfhfw |               
+(7 rows)
+
+---CONTACTS---
+ id |  first_name   | last_name  | telegram_username | telegram_id | platform | bot_id 
+----+---------------+------------+-------------------+-------------+----------+--------
+ 26 | Инна • Долкар | Доржиева   | eshe_dolkar       |   456598810 | telegram |      6
+ 25 | Людмила       | Шабаганова | lshabaganova      |  1285996291 | telegram |      6
+ 24 | Саян          | Арамхиев   |                   |             | vk       |     15
+ 23 | Булат         | Итыгилов   |                   |             | vk       |     15
+ 21 | Дамдин        | Шагжиев    | doctor_damdin     |  1505500451 | telegram |      3
+ 20 | Jesus         |            | Mickey_Anus       |   839647729 | telegram |      3
+ 19 | Тамара        | Васильева  | Tamara_online     |   364230803 | telegram |      5
+ 18 | Сергей        |            | ansuz43           |   458500773 | telegram |      1
+ 17 | Bulat         |            | bulat_ayaprod     |   217296788 | telegram |      3
+ 16 | Инна • Долкар | Доржиева   | eshe_dolkar       |   456598810 | telegram |      3
+(10 rows)
+
+---DONE---

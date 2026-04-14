@@ -17,6 +17,9 @@ cryptography>=42.0.0
 slowapi==0.1.9
 aiosmtplib==3.0.2
 sentry-sdk[fastapi]>=2.0.0
+telethon>=1.36.0
+instaloader>=4.13
+beautifulsoup4>=4.12
 
 # ─── Dev / Test ───
 pytest>=8.0

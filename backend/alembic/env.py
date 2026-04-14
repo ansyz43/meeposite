@@ -13,6 +13,8 @@ from app.models import (  # noqa: F401
     User, Bot, Contact, Message,
     PasswordResetToken, ReferralPartner, ReferralSession,
     Broadcast, CashbackTransaction,
+    ContentProfile, CompetitorSource, CompetitorPost,
+    ContentPlan, ContentPlanItem,
 )
 
 config = context.config

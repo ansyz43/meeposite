@@ -305,3 +305,118 @@ class CashbackTransactionResponse(BaseModel):
     level: int
     source_type: str
     created_at: datetime.datetime
+
+
+# --- Content Plan ---
+class ContentProfileRequest(BaseModel):
+    niche: str = Field(min_length=1, max_length=255)
+    platforms: list[str] = Field(default=["instagram", "telegram"])
+    tone: str = Field(default="friendly", max_length=100)
+    target_audience: str = Field(default="", max_length=2000)
+    topics: list[str] = Field(default=[])
+
+    @field_validator("platforms")
+    @classmethod
+    def validate_platforms(cls, v):
+        allowed = {"instagram", "telegram"}
+        for p in v:
+            if p not in allowed:
+                raise ValueError(f"Платформа '{p}' не поддерживается. Допустимые: {allowed}")
+        return v
+
+
+class ContentProfileResponse(BaseModel):
+    id: int
+    niche: str
+    platforms: list[str]
+    tone: str
+    target_audience: str
+    topics: list[str]
+    created_at: datetime.datetime
+    updated_at: datetime.datetime | None
+    competitors: list["CompetitorSourceResponse"] = []
+
+
+class CompetitorSourceAdd(BaseModel):
+    platform: str = Field(max_length=20)
+    channel_username: str = Field(min_length=1, max_length=255)
+
+    @field_validator("platform")
+    @classmethod
+    def validate_platform(cls, v):
+        if v not in ("telegram", "instagram"):
+            raise ValueError("Платформа должна быть 'telegram' или 'instagram'")
+        return v
+
+    @field_validator("channel_username")
+    @classmethod
+    def clean_username(cls, v):
+        return v.lstrip("@").strip().lower()
+
+
+class CompetitorSourceResponse(BaseModel):
+    id: int
+    platform: str
+    channel_username: str
+    channel_title: str | None
+    last_parsed_at: datetime.datetime | None
+    is_active: bool
+    post_count: int = 0
+
+
+class CompetitorPostResponse(BaseModel):
+    id: int
+    text: str
+    views: int | None
+    reactions: int | None
+    posted_at: datetime.datetime | None
+
+
+class GeneratePlanRequest(BaseModel):
+    platform: str = Field(max_length=20)
+    period_days: int = Field(default=7, ge=7, le=30)
+
+    @field_validator("platform")
+    @classmethod
+    def validate_platform(cls, v):
+        if v not in ("instagram", "telegram"):
+            raise ValueError("Платформа должна быть 'instagram' или 'telegram'")
+        return v
+
+
+class ContentPlanItemResponse(BaseModel):
+    id: int
+    day_number: int
+    post_type: str
+    topic: str
+    text: str
+    hashtags: str | None
+    best_time: str | None
+    is_edited: bool
+
+
+class ContentPlanItemUpdate(BaseModel):
+    text: str | None = Field(default=None, max_length=4000)
+    hashtags: str | None = Field(default=None, max_length=1000)
+    topic: str | None = Field(default=None, max_length=255)
+
+
+class ContentPlanResponse(BaseModel):
+    id: int
+    title: str
+    platform: str
+    period_days: int
+    status: str
+    error_message: str | None
+    created_at: datetime.datetime
+    items: list[ContentPlanItemResponse] = []
+
+
+class ContentPlanListItem(BaseModel):
+    id: int
+    title: str
+    platform: str
+    period_days: int
+    status: str
+    created_at: datetime.datetime
+    item_count: int = 0

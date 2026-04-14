@@ -1,0 +1,20 @@
+ id |          name          |           email            | ref_code | referred_by_id 
+----+------------------------+----------------------------+----------+----------------
+ 10 | Сергей Гордеев         | kisuke43@gmail.com         | U27533HP |               
+ 13 | sergey                 | sergeiaitime@gmail.com     | 5tHKbyXR |               
+ 14 | Сергей                 | tg_458500773@telegram.user | 7hyAPt28 |               
+ 15 | Инна • Долкар Доржиева | tg_456598810@telegram.user | 7WGieEw4 |               
+ 16 | Булат Итыгилов         | lst63.salamander@gmail.com | CIGJwqK8 |               
+ 17 | Тамара Васильева       | tg_364230803@telegram.user | CO1zau_N |             15
+ 18 | Людмила Шабаганова     | lshabaganova@yandex.ru     | AJsrfhfw |               
+(7 rows)
+
+ id | user_id | bot_id | seller_link | ref_code | credits | is_active | created_at 
+----+---------+--------+-------------+----------+---------+-----------+------------
+(0 rows)
+
+ id | partner_id | contact_id | telegram_id | started_at | expires_at | is_active 
+----+------------+------------+-------------+------------+------------+-----------
+(0 rows)
+
+Connection to 5.42.112.91 closed by remote host.

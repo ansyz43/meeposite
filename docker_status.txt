@@ -1,0 +1,9 @@
+CHECK 
+<no value>               STATUS
+meeposite-backend-1      Up 4 minutes (healthy)
+meeposite-bot_worker-1   Up 3 hours (healthy)
+meeposite-db-1           Up 3 hours (healthy)
+meeposite-frontend-1     Up 4 minutes
+meeposite-nginx-1        Up 3 hours
+Connection to 5.42.112.91 closed by remote host.
+DONE 

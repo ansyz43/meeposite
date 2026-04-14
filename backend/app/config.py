@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     TELEGRAM_BOT_TOKEN_LOGIN: str = ""
 
+    # Content Plan — Telegram User API for channel parsing
+    TELEGRAM_API_ID: int = 0
+    TELEGRAM_API_HASH: str = ""
+    TELEGRAM_SESSION_NAME: str = "content_parser"
+
     model_config = {"env_file": ".env"}
 
     @model_validator(mode="after")

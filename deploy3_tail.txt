@@ -1,0 +1,5 @@
+ Container meeposite-frontend-1 Starting 
+ Container meeposite-frontend-1 Started 
+ Container meeposite-db-1 Healthy 
+ Container meeposite-bot_worker-1 Starting 
+ Container meeposite-bot_worker-1 Started 

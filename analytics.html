@@ -1,0 +1,420 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meepo Analytics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh}
+  .header{text-align:center;padding:48px 20px 24px}
+  .header h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,#34d399,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header p{color:#666;margin-top:8px;font-size:.95rem}
+  .badge{display:inline-block;background:#34d39920;color:#34d399;padding:6px 16px;border-radius:999px;font-size:.8rem;font-weight:600;margin-top:12px}
+  .container{max-width:1200px;margin:0 auto;padding:0 20px 60px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px}
+  .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px;margin-bottom:20px}
+  @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  .card{background:#12121a;border:1px solid #ffffff0f;border-radius:16px;padding:24px}
+  .card-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:16px;font-weight:600}
+  .stat-card{text-align:center}
+  .stat-value{font-size:2rem;font-weight:800}
+  .stat-label{font-size:.8rem;color:#666;margin-top:4px}
+  .green{color:#34d399}.blue{color:#3b82f6}.orange{color:#f59e0b}.red{color:#ef4444}.purple{color:#a78bfa}.cyan{color:#22d3ee}
+  .section-title{font-size:1.3rem;font-weight:700;color:#fff;margin:40px 0 20px;padding-left:12px;border-left:3px solid #34d399}
+  .chart-container{position:relative;width:100%}
+  .chart-container canvas{width:100%!important}
+  .source{font-size:.7rem;color:#444;margin-top:8px;font-style:italic}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th{text-align:left;padding:10px 12px;color:#666;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #ffffff10}
+  td{padding:10px 12px;border-bottom:1px solid #ffffff08}
+  tr:hover td{background:#ffffff05}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:8px 20px;border-radius:999px;font-size:.85rem;font-weight:500;cursor:pointer;border:1px solid #ffffff15;color:#888;transition:all .2s;background:transparent}
+  .tab:hover{border-color:#ffffff30;color:#ccc}
+  .tab.active{background:#34d39920;border-color:#34d39950;color:#34d399}
+  .formula{background:#1a1a2e;border:1px solid #ffffff10;border-radius:12px;padding:16px 20px;font-family:'Courier New',monospace;font-size:.85rem;color:#a78bfa;margin:12px 0;text-align:center}
+  .highlight-row td{background:#34d39908;font-weight:600}
+  .info-box{background:#1a1a2e;border:1px solid #3b82f630;border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:.85rem;line-height:1.6}
+  .info-box b{color:#3b82f6}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Meepo Financial Analytics</h1>
+  <p>Финансовая модель на реальных данных OpenAI billing</p>
+  <div class="badge">Первая продажа 17 000 руб</div>
+</div>
+<div class="container">
+
+  <div class="grid-4">
+    <div class="card stat-card"><div class="stat-value green">0.41 руб</div><div class="stat-label">За 1 сообщение AI</div></div>
+    <div class="card stat-card"><div class="stat-value blue">4.7 руб</div><div class="stat-label">За 1 диалог (11 msg)</div></div>
+    <div class="card stat-card"><div class="stat-value orange">$0.30</div><div class="stat-label">70 запросов (30-31 мар)</div></div>
+    <div class="card stat-card"><div class="stat-value purple">98%</div><div class="stat-label">Маржинальность</div></div>
+  </div>
+
+  <div class="info-box">
+    <b>Источник данных:</b> OpenAI billing 30-31 марта (чистые дни без аналитики).<br>
+    29 марта UTC ($1.07/13req = $0.082/req) исключено: это суббота ~20:00 Владивосток (UTC+10) = аналитика на тяжёлой модели, не бот.<br>
+    <b>Чистые данные:</b> 30 мар $0.09/13req + 31 мар $0.21/57req = <b>$0.30 за 70 запросов = $0.00429/msg</b>
+  </div>
+  <div class="section-title">1. ROI Продавца (бот за 20 000 руб)</div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Прибыль продавца со 100 ссылок бота</div><div class="chart-container"><canvas id="sellerRoiChart"></canvas></div><div class="source">Продукт ~17 000р, маржа продавца ~25% = 4 250р с продажи</div></div>
+    <div class="card"><div class="card-title">Точка окупаемости бота (20 000 руб)</div><div class="chart-container"><canvas id="breakEvenChart"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:20px"><div class="card-title">Воронка конверсии (100 ссылок отправлено)</div><div class="chart-container"><canvas id="funnelChart" style="max-height:300px"></canvas></div></div>
+
+  <div class="section-title">2. ROI бомжей (ссылки по 30 руб)</div>
+  <div class="card" style="margin-bottom:20px"><div class="card-title">Прибыль от покупки ссылок (при разном количестве)</div><div class="chart-container"><canvas id="bomzhRoiChart"></canvas></div></div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Экономика бомжа (минимум 100 руб = 5 ссылок по 20 руб)</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Пакет</th><th class="num">Ссылок</th><th class="num">Цена</th><th class="num">Конв. 1%</th><th class="num">Конв. 3.5%</th><th class="num">Конв. 10%</th></tr></thead>
+        <tbody>
+          <tr><td>Минимальный</td><td class="num">5</td><td class="num">100 руб</td><td class="num red">-100</td><td class="num red">-100</td><td class="num green">+2 125</td></tr>
+          <tr><td>Стартовый</td><td class="num">10</td><td class="num">300 руб</td><td class="num red">-300</td><td class="num red">-300</td><td class="num green">+3 950</td></tr>
+          <tr><td>Базовый</td><td class="num">30</td><td class="num">900 руб</td><td class="num red">-900</td><td class="num green">+3 563</td><td class="num green">+11 850</td></tr>
+          <tr class="highlight-row"><td>Оптимальный</td><td class="num">50</td><td class="num">1 500 руб</td><td class="num green">+625</td><td class="num green">+5 938</td><td class="num green">+19 750</td></tr>
+          <tr><td>Максимальный</td><td class="num">100</td><td class="num">3 000 руб</td><td class="num green">+1 250</td><td class="num green">+11 875</td><td class="num green">+39 500</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="source">Конверсия 1% = пессимист, 3.5% = реалист, 10% = оптимист. Продажа = 4 250р маржи продавцу.</div>
+  </div>
+  <div class="section-title">3. Себестоимость (реальные данные OpenAI)</div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Стоимость за сообщение (руб)</div><div class="chart-container"><canvas id="tokenCostChart"></canvas></div><div class="source">GPT-5.4 mini: $0.75/1M input, $4.50/1M output. Биллинг: $0.00429/msg</div></div>
+    <div class="card"><div class="card-title">Биллинг по дням (чистые vs загрязнённые)</div><div class="chart-container"><canvas id="billingChart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Структура расходов за 6 мес (реалистичный)</div><div class="chart-container"><canvas id="costPieChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Реферальный кешбэк 3-2-1% (цепочка)</div><div class="chart-container"><canvas id="cashbackChart" style="max-height:300px"></canvas></div></div>
+  </div>
+
+  <div class="section-title">4. Рост проекта - 6 месяцев</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchScenario('all',this)">Все сценарии</button>
+    <button class="tab" onclick="switchScenario('slow',this)">Медленный</button>
+    <button class="tab" onclick="switchScenario('real',this)">Реалистичный (цель)</button>
+    <button class="tab" onclick="switchScenario('fast',this)">Быстрый</button>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Ежемесячный доход (руб)</div><div class="chart-container"><canvas id="revenueChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Чистая прибыль (руб)</div><div class="chart-container"><canvas id="profitChart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Количество ботов (накопительно)</div><div class="chart-container"><canvas id="botsChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Пользователи / месяц</div><div class="chart-container"><canvas id="usersChart"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:20px"><div class="card-title">Накопительная прибыль за 6 месяцев</div><div class="chart-container"><canvas id="cumulativeChart"></canvas></div></div>
+  <div class="card" style="margin-bottom:20px"><div class="card-title">Доход vs Расходы - Реалистичный сценарий</div><div class="chart-container"><canvas id="revenueVsCostChart"></canvas></div></div>
+
+  <div class="card">
+    <div class="card-title">Сводная таблица - итоги за 6 месяцев</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Сценарий</th><th class="num">Ботов</th><th class="num">Бомжей</th><th class="num">Юзеров бот.</th><th class="num">Доход</th><th class="num">Расходы AI</th><th class="num">Чистая</th><th class="num">Маржа</th></tr></thead>
+        <tbody>
+          <tr><td>Медленный</td><td class="num">12</td><td class="num">400</td><td class="num">1 020</td><td class="num green">300 000</td><td class="num red">4 692</td><td class="num green">293 808</td><td class="num">98%</td></tr>
+          <tr class="highlight-row"><td>Реалистичный</td><td class="num">15</td><td class="num">1 000</td><td class="num">1 440</td><td class="num green">450 000</td><td class="num red">6 624</td><td class="num green">441 876</td><td class="num">98%</td></tr>
+          <tr><td>Быстрый</td><td class="num">100</td><td class="num">5 000</td><td class="num">7 440</td><td class="num green">2 750 000</td><td class="num red">34 224</td><td class="num green">2 714 276</td><td class="num">99%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="formula" style="margin-top:20px">Бот=20 000р | Ссылка=30р | AI=0.41р/msg (биллинг OpenAI) | Кешбэк=3-2-1% | Продукт~17 000р, маржа~25%</div>
+  <div class="section-title">5. Конверсия — исследование рынка (13 источников)</div>
+  <div class="info-box">
+    <b>Методология:</b> Собраны данные о конверсии ИИ-чатботов из 13 публичных источников (Ubisend, Intercom, Which-50, Gorgias, Tidio, Dashly, DemandSage, MasterOfCode, Botpress/BCG).<br>
+    <b>Медиана рынка:</b> 21-22% для вовлечённых чат-пользователей на сайтах.<br>
+    <b>Коррекция для Meepo:</b> Telegram (нет корзины) + дорогой продукт FitLine + нет мгновенной оплаты &rarr; /2. Но: тёплый трафик от знакомых + персональная рекомендация &rarr; &times;1.5<br>
+    <b>Итог:</b> Конверсия диалог&rarr;покупка: <span class="orange">5% пессимист</span> / <span class="green">12% реалист</span> / <span class="cyan">25% оптимист</span><br>
+    <b>Ссылка&rarr;покупка (&times;50% CTR):</b> <span class="orange">2.5%</span> / <span class="green">6%</span> / <span class="cyan">12.5%</span>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Источники исследования — конверсия chat &rarr; sale</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>#</th><th>Источник</th><th>Метрика</th><th class="num">Значение</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Ubisend</td><td>Запросы &rarr; продажи без человека</td><td class="num green">23.7%</td></tr>
+          <tr><td>2</td><td>Which-50</td><td>Средняя chat-to-conversion</td><td class="num green">10-20%</td></tr>
+          <tr><td>3</td><td>Which-50</td><td>E-commerce benchmark</td><td class="num green">15-25%</td></tr>
+          <tr><td>4</td><td>Which-50 (кейс)</td><td>Chat users vs non-chat</td><td class="num green">40% vs 22%</td></tr>
+          <tr><td>5</td><td>Intercom</td><td>Продажи через бота</td><td class="num green">26%</td></tr>
+          <tr><td>6</td><td>Gorgias</td><td>Chat users (&times;2.8 от среднего CR)</td><td class="num orange">~7%</td></tr>
+          <tr><td>7</td><td>Tidio/Outgrow/Dashly</td><td>Макс. в отдельных отраслях</td><td class="num cyan">до 70%</td></tr>
+          <tr><td>8</td><td>Dashly</td><td>AI-чатбот vs формы сайта</td><td class="num green">&times;3 (15% vs 5%)</td></tr>
+          <tr><td>9</td><td>Dashly GenAI</td><td>Рост конверсии с GenAI</td><td class="num green">&times;2.5</td></tr>
+          <tr><td>10</td><td>DemandSage</td><td>E-commerce улучшение с ботом</td><td class="num green">+30%</td></tr>
+          <tr><td>11</td><td>MasterOfCode</td><td>Бот vs традиционная воронка</td><td class="num green">&times;3</td></tr>
+          <tr><td>12</td><td>Botpress/BCG</td><td>GenAI — топ-1 touchpoint</td><td class="num blue">Топ-1</td></tr>
+          <tr><td>13</td><td>Which-50 (Intuit)</td><td>Рост конверсии после чата</td><td class="num cyan">+190%</td></tr>
+          <tr class="highlight-row"><td></td><td><b>Meepo (реальные)</b></td><td>3 юзера &rarr; 1 продажа</td><td class="num green">33%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Конверсии из исследований (абсолютные %)</div><div class="chart-container"><canvas id="researchChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Старые vs исследовательские сценарии</div><div class="chart-container"><canvas id="oldVsNewChart"></canvas></div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card"><div class="card-title">ROI продавца — исследовательские конверсии (100 ссылок)</div><div class="chart-container"><canvas id="sellerRoiResearchChart"></canvas></div><div class="source">Ссылка&rarr;покупка 2.5%/6%/12.5% (= диалог&rarr;покупка 5%/12%/25% &times; CTR 50%)</div></div>
+    <div class="card"><div class="card-title">Точка окупаемости — исследовательские конверсии</div><div class="chart-container"><canvas id="breakEvenResearchChart"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px"><div class="card-title">Воронка — исследовательские данные (100 ссылок)</div><div class="chart-container"><canvas id="funnelResearchChart" style="max-height:300px"></canvas></div></div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">ROI бомжа — исследовательские конверсии</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Пакет</th><th class="num">Ссылок</th><th class="num">Цена</th><th class="num">Пессим. 2.5%</th><th class="num">Реалист 6%</th><th class="num">Оптимист 12.5%</th></tr></thead>
+        <tbody>
+          <tr><td>Минимальный</td><td class="num">5</td><td class="num">100р</td><td class="num green">+431</td><td class="num green">+1 175</td><td class="num green">+2 556</td></tr>
+          <tr><td>Стартовый</td><td class="num">10</td><td class="num">300р</td><td class="num green">+763</td><td class="num green">+2 250</td><td class="num green">+5 013</td></tr>
+          <tr><td>Базовый</td><td class="num">30</td><td class="num">900р</td><td class="num green">+2 288</td><td class="num green">+6 750</td><td class="num green">+15 038</td></tr>
+          <tr class="highlight-row"><td>Оптимальный</td><td class="num">50</td><td class="num">1 500р</td><td class="num green">+3 813</td><td class="num green">+11 250</td><td class="num green">+25 063</td></tr>
+          <tr><td>Максимальный</td><td class="num">100</td><td class="num">3 000р</td><td class="num green">+7 625</td><td class="num green">+22 500</td><td class="num green">+50 125</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="source">Все пакеты в плюсе! При исследовательских конверсиях даже 5 ссылок за 100р окупаются.</div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Сравнение ROI бомжа — старые vs исследовательские конверсии (50 ссылок за 1 500р)</div>
+    <div class="chart-container"><canvas id="bomzhCompareChart"></canvas></div>
+  </div>
+
+  <div class="formula">Исследование: медиана рынка 21-22% (dialog&rarr;sale) | Meepo: 5%/12%/25% | Ссылка&rarr;покупка: 2.5%/6%/12.5%</div>
+</div>
+
+  <div class="section-title">6. Сетевой рост  лавинообразный эффект FitLine</div>
+  <div class="info-box">
+    <b>Модель:</b> FitLine = MLM-структура. У топ-продавцов (Team Manager+) команда 30-100 человек.<br>
+    <b>Механика:</b> Зацепил 1 топа &rarr; он покупает бота &rarr; рекомендует команде &rarr; ~10% купят бота, ~50% станут бомжами<br>
+    <b>1 топ (команда ~40 чел) = 5 ботов + 20 бомжей = 103 000 руб выручки</b><br>
+    <b>Лавина:</b> Топы общаются между собой. Если бот реально продаёт  первые топы расскажут остальным &rarr; экспоненциальный рост
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Что даёт 1 подключённый топ (команда ~40 чел)</div>
+    <div class="chart-container"><canvas id="topMultiplierChart" style="max-height:300px"></canvas></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchNet('all',this)">Все паттерны</button>
+    <button class="tab" onclick="switchNet('cautious',this)">Осторожный (1 топ/2 мес)</button>
+    <button class="tab" onclick="switchNet('avalanche',this)">Лавина (2-3 топа/мес)</button>
+    <button class="tab" onclick="switchNet('viral',this)">Вирусный (5+ топов/мес)</button>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Ежемесячный доход  сетевой рост (руб)</div><div class="chart-container"><canvas id="netRevenueChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Чистая прибыль  сетевой рост (руб)</div><div class="chart-container"><canvas id="netProfitChart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Боты  накопительно</div><div class="chart-container"><canvas id="netBotsChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Бомжи  накопительно</div><div class="chart-container"><canvas id="netBomzhiChart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Подключённые топы (накопительно)</div><div class="chart-container"><canvas id="netTopsChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Накопительная прибыль за 6 месяцев</div><div class="chart-container"><canvas id="netCumProfitChart"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Сравнение: обычный рост (секция 4) vs сетевой (секция 6)  реалистичный сценарий</div>
+    <div class="chart-container"><canvas id="compareGrowthChart"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Сводная таблица  сетевой рост за 6 месяцев</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Паттерн</th><th class="num">Топов</th><th class="num">Ботов</th><th class="num">Бомжей</th><th class="num">Юзеров бот.</th><th class="num">Доход</th><th class="num">Расходы</th><th class="num">Чистая</th></tr></thead>
+        <tbody>
+          <tr><td>Осторожный</td><td class="num">4</td><td class="num">26</td><td class="num">130</td><td class="num">1 051</td><td class="num green">540 250</td><td class="num red">13 741</td><td class="num green">526 509</td></tr>
+          <tr class="highlight-row"><td>Лавина</td><td class="num">24</td><td class="num">132</td><td class="num">760</td><td class="num green">4 538</td><td class="num green">2 754 000</td><td class="num red">29 467</td><td class="num green">2 724 533</td></tr>
+          <tr><td>Вирусный</td><td class="num">85</td><td class="num">450</td><td class="num">2 800</td><td class="num green">14 950</td><td class="num green">9 420 000</td><td class="num red">76 426</td><td class="num green">9 343 574</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="source">1 топ (команда 40 чел) = 5 ботов (100к) + 20 бомжей (3к) = 103к выручки. Лавина: топы рассказывают друг другу.</div>
+  </div>
+
+  <div class="formula">1 топ = 5 ботов + 20 бомжей = 103 000 руб | Лавина: топ &rarr; топ &rarr; топ | AI = 0.41 руб/msg | Маржа 97-98%</div>
+<script>
+var C={green:'#34d399',greenBg:'#34d39920',blue:'#3b82f6',blueBg:'#3b82f620',orange:'#f59e0b',orangeBg:'#f59e0b20',red:'#ef4444',redBg:'#ef444420',purple:'#a78bfa',purpleBg:'#a78bfa20',cyan:'#22d3ee',cyanBg:'#22d3ee20'};
+Chart.defaults.color='#666';Chart.defaults.borderColor='#ffffff10';Chart.defaults.font.family='Inter';
+
+// 1. Seller ROI - 100 links sent, product 17000r, margin 25% = 4250r per sale
+new Chart(document.getElementById('sellerRoiChart'),{type:'bar',data:{labels:['Пессимист 1%','Реалист 3.5%','Оптимист 10%'],datasets:[{label:'Прибыль продавца',data:[4250,14875,42500],backgroundColor:[C.orangeBg,C.greenBg,C.cyanBg],borderColor:[C.orange,C.green,C.cyan],borderWidth:1.5,borderRadius:8},{label:'Стоимость бота (20 000р)',data:[20000,20000,20000],backgroundColor:'transparent',borderColor:C.red,borderWidth:1.5,borderDash:[5,5],type:'line',pointStyle:false,fill:false}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return(v/1000)+'к'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+
+// 2. Break-even
+new Chart(document.getElementById('breakEvenChart'),{type:'line',data:{labels:['0','25','50','75','100','150','200','300','400','500'],datasets:[{label:'10% конверсия',data:[0,10625,21250,31875,42500,63750,85000,127500,170000,212500],borderColor:C.cyan,tension:.3,fill:false},{label:'3.5% конверсия',data:[0,3719,7438,11156,14875,22313,29750,44625,59500,74375],borderColor:C.green,tension:.3,fill:false},{label:'1% конверсия',data:[0,1063,2125,3188,4250,6375,8500,12750,17000,21250],borderColor:C.orange,tension:.3,fill:false},{label:'Стоимость бота',data:[20000,20000,20000,20000,20000,20000,20000,20000,20000,20000],borderColor:C.red,borderDash:[8,4],pointStyle:false,fill:false}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{x:{title:{display:true,text:'Ссылок отправлено'},grid:{color:'#ffffff08'}},y:{ticks:{callback:function(v){return(v/1000)+'к'}},grid:{color:'#ffffff08'}}}}});
+
+// 3. Funnel
+new Chart(document.getElementById('funnelChart'),{type:'bar',data:{labels:['Ссылок отправлено','Начали диалог (50%)','Заинтересовались (12%)','Купили реалист (3.5%)'],datasets:[{data:[100,50,12,3.5],backgroundColor:[C.blueBg,C.purpleBg,C.orangeBg,C.greenBg],borderColor:[C.blue,C.purple,C.orange,C.green],borderWidth:1.5,borderRadius:8}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#ffffff08'},title:{display:true,text:'Человек'}},y:{grid:{display:false}}}}});
+
+// 4. Bomzh ROI
+new Chart(document.getElementById('bomzhRoiChart'),{type:'bar',data:{labels:['5 (100р)','10 (300р)','30 (900р)','50 (1500р)','100 (3000р)'],datasets:[{label:'Пессимист 1%',data:[-100,-300,-900,625,1250],backgroundColor:C.orangeBg,borderColor:C.orange,borderWidth:1.5,borderRadius:6},{label:'Реалист 3.5%',data:[-100,-300,3563,5938,11875],backgroundColor:C.greenBg,borderColor:C.green,borderWidth:1.5,borderRadius:6},{label:'Оптимист 10%',data:[2125,3950,11850,19750,39500],backgroundColor:C.cyanBg,borderColor:C.cyan,borderWidth:1.5,borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{y:{ticks:{callback:function(v){return(v/1000).toFixed(1)+'к'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+// 5. Token cost - real billing data
+new Chart(document.getElementById('tokenCostChart'),{type:'bar',data:{labels:['Input (avg 5975 tok)','Output (avg 90 tok)','Итого/сообщение','За диалог (11 msg)'],datasets:[{data:[0.043,0.039,0.41,4.7],backgroundColor:[C.blueBg,C.purpleBg,C.greenBg,C.cyanBg],borderColor:[C.blue,C.purple,C.green,C.cyan],borderWidth:1.5,borderRadius:8}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y.toFixed(3)+' руб'}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return v+' руб'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+
+// 6. Billing per day
+new Chart(document.getElementById('billingChart'),{type:'bar',data:{labels:['29 мар (аналит.)','30 мар (бот)','31 мар (бот)'],datasets:[{label:'$/запрос',data:[0.082,0.0069,0.0037],backgroundColor:[C.redBg,C.greenBg,C.greenBg],borderColor:[C.red,C.green,C.green],borderWidth:1.5,borderRadius:8},{label:'Запросов',data:[13,13,57],backgroundColor:[C.blueBg,C.blueBg,C.blueBg],borderColor:[C.blue,C.blue,C.blue],borderWidth:1.5,borderRadius:8,yAxisID:'y1'}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'$/запрос'},grid:{color:'#ffffff08'}},y1:{position:'right',beginAtZero:true,title:{display:true,text:'Запросов'},grid:{display:false}},x:{grid:{display:false}}}}});
+
+// 7. Cost structure pie (6 months realistic: 15 bots, 1000 bomzhi, 1440 users)
+// AI: 1440 users * 11 msg * 0.41r = 6,494r over 6 months
+// Server: 1500r/mo * 6 = 9,000r
+// Cashback: 15 bots * 20000 * 6% = 18,000r (sum of 3+2+1% chain)
+new Chart(document.getElementById('costPieChart'),{type:'doughnut',data:{labels:['AI токены (6 494р)','Сервер (9 000р)','Кешбэк реф. (18 000р)'],datasets:[{data:[6494,9000,18000],backgroundColor:[C.blueBg,C.orangeBg,C.purpleBg],borderColor:[C.blue,C.orange,C.purple],borderWidth:1.5}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom'}}}});
+
+// 8. Cashback chain
+new Chart(document.getElementById('cashbackChart'),{type:'bar',data:{labels:['Ты <- Маша (3%)=600р','Ты <- Петя (2%)=400р','Ты <- Вася (1%)=200р','Маша <- Петя (3%)=600р','Маша <- Вася (2%)=400р','Петя <- Вася (3%)=600р'],datasets:[{label:'Кешбэк с бота 20 000р',data:[600,400,200,600,400,600],backgroundColor:[C.greenBg,C.greenBg,C.greenBg,C.blueBg,C.blueBg,C.purpleBg],borderColor:[C.green,C.green,C.green,C.blue,C.blue,C.purple],borderWidth:1.5,borderRadius:6}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.x.toLocaleString('ru')+' руб'}}}},scales:{x:{ticks:{callback:function(v){return v+' руб'}},grid:{color:'#ffffff08'}},y:{grid:{display:false}}}}});
+// 9. Growth data - 3 scenarios over 6 months
+// SLOW: start with referrals only, 2 bots/mo, ~70 bomzhi/mo
+// Bots: 2,4,6,8,10,12 (cumul). Each bot = 4 bomzhi avg
+// Bomzhi buy ~3 links = 90r each, some buy 100r packs
+// Users per bot: ~15/mo (bomzhi send links to friends)
+// Revenue: bots*20000 + bomzhi*50links*30r (avg spend ~150r/bomzh from minimum packs)
+// AI cost: users*11msg*0.41r = 4.51r/user + server 1500/mo
+
+// REAL (target): 5 colleagues invite, 1 buys bot, 4 become bomzhi pattern
+// 10-15 bots in 6mo, ~1000 bomzhi total
+// Revenue from bots: 15*20000=300k, from bomzhi: 1000*150r=150k = 450k total
+
+// FAST: aggressive growth, partnerships, 100 bots, 5000 bomzhi
+var months=['Мес 1','Мес 2','Мес 3','Мес 4','Мес 5','Мес 6'];
+var gd={
+  slow:{
+    bots:[2,4,6,8,10,12],
+    bomzhi:[40,80,130,200,300,400],
+    users:[30,70,120,180,260,360],
+    revenue:[43000,56000,72000,90000,115000,144000],
+    costs:[665,860,1086,1337,1674,2004],
+    profit:[42335,55140,70914,88663,113326,141996]
+  },
+  real:{
+    bots:[3,5,8,10,13,15],
+    bomzhi:[50,150,300,500,750,1000],
+    users:[40,100,200,350,550,800],
+    revenue:[67500,115000,185000,270000,367500,450000],
+    costs:[828,1251,1802,2608,3595,4530],
+    profit:[66672,113749,183198,267392,363905,445470]
+  },
+  fast:{
+    bots:[10,25,45,65,85,100],
+    bomzhi:[200,600,1500,2800,4200,5000],
+    users:[150,450,1000,2000,3500,5500],
+    revenue:[230000,575000,1050000,1720000,2480000,2750000],
+    costs:[2577,5281,10510,18470,27685,38725],
+    profit:[227423,569719,1039490,1701530,2452315,2711275]
+  }
+};
+['slow','real','fast'].forEach(function(k){gd[k].cumProfit=[];var s=0;for(var i=0;i<gd[k].profit.length;i++){s+=gd[k].profit[i];gd[k].cumProfit.push(s)}});
+var charts={};
+var labelsMap={slow:'Медленный',real:'Реалистичный',fast:'Быстрый'};
+var colorsMap={slow:C.orange,real:C.green,fast:C.cyan};
+
+function fmtRub(v){return v>=1000000?(v/1000000).toFixed(1)+'М':(v/1000).toFixed(0)+'к'}
+function fmtNum(v){return v.toLocaleString('ru')}
+function mkDs(key,sc){return{label:labelsMap[sc],data:gd[sc][key],borderColor:colorsMap[sc],backgroundColor:colorsMap[sc]+'20',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointBackgroundColor:colorsMap[sc]}}
+function mkOpts(fmt){return{responsive:true,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.parsed.y)}}}},scales:{y:{beginAtZero:true,ticks:{callback:fmt},grid:{color:'#ffffff08'}},x:{grid:{color:'#ffffff08'}}}}}
+
+function buildCharts(scenarios){
+  Object.keys(charts).forEach(function(k){if(charts[k])charts[k].destroy()});
+  charts.revenue=new Chart(document.getElementById('revenueChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return mkDs('revenue',s)})},options:mkOpts(fmtRub)});
+  charts.profit=new Chart(document.getElementById('profitChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return mkDs('profit',s)})},options:mkOpts(fmtRub)});
+  charts.bots=new Chart(document.getElementById('botsChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return mkDs('bots',s)})},options:mkOpts(fmtNum)});
+  charts.users=new Chart(document.getElementById('usersChart'),{type:'bar',data:{labels:months,datasets:scenarios.map(function(s){return{label:labelsMap[s],data:gd[s].users,backgroundColor:colorsMap[s]+'30',borderColor:colorsMap[s],borderWidth:1.5,borderRadius:6}})},options:mkOpts(fmtNum)});
+  charts.cumulative=new Chart(document.getElementById('cumulativeChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return mkDs('cumProfit',s)})},options:mkOpts(fmtRub)});
+  var rs=scenarios.indexOf('real')>=0?'real':scenarios[0];
+  charts.revVsCost=new Chart(document.getElementById('revenueVsCostChart'),{type:'bar',data:{labels:months,datasets:[{label:'Доход',data:gd[rs].revenue,backgroundColor:C.greenBg,borderColor:C.green,borderWidth:1.5,borderRadius:6},{label:'Расходы AI+сервер',data:gd[rs].costs,backgroundColor:C.redBg,borderColor:C.red,borderWidth:1.5,borderRadius:6}]},options:mkOpts(fmtRub)});
+}
+
+function switchScenario(mode,btn){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});btn.classList.add('active');if(mode==='all')buildCharts(['slow','real','fast']);else buildCharts([mode])}
+buildCharts(['slow','real','fast']);
+// 10. Research sources chart
+new Chart(document.getElementById('researchChart'),{type:'bar',data:{labels:['Gorgias','Dashly GenAI','Which-50 avg','Dashly AI','MasterOfCode','Which-50 ecomm','Ubisend','Intercom','DemandSage','Meepo (real)','Which-50 chat','Tidio max'],datasets:[{label:'Конверсия %',data:[7,12.5,15,15,15,20,23.7,26,30,33,40,70],backgroundColor:[C.orangeBg,C.greenBg,C.greenBg,C.greenBg,C.greenBg,C.greenBg,C.greenBg,C.greenBg,C.cyanBg,C.purpleBg,C.cyanBg,C.cyanBg],borderColor:[C.orange,C.green,C.green,C.green,C.green,C.green,C.green,C.green,C.cyan,C.purple,C.cyan,C.cyan],borderWidth:1.5,borderRadius:6}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.x+'%'}}}},scales:{x:{ticks:{callback:function(v){return v+'%'}},grid:{color:'#ffffff08'},title:{display:true,text:'Конверсия dialog -> sale'}},y:{grid:{display:false}}}}});
+
+// 11. Old vs New scenarios
+new Chart(document.getElementById('oldVsNewChart'),{type:'bar',data:{labels:['Пессимист','Реалист','Оптимист'],datasets:[{label:'Старые (link->sale)',data:[1,3.5,10],backgroundColor:C.redBg,borderColor:C.red,borderWidth:1.5,borderRadius:6},{label:'Исследование (link->sale)',data:[2.5,6,12.5],backgroundColor:C.greenBg,borderColor:C.green,borderWidth:1.5,borderRadius:6},{label:'Исследование (dialog->sale)',data:[5,12,25],backgroundColor:C.cyanBg,borderColor:C.cyan,borderWidth:1.5,borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y+'%'}}}},scales:{y:{ticks:{callback:function(v){return v+'%'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+
+// 12. Seller ROI Research (100 links, 4250r/sale, link->sale 2.5/6/12.5%)
+new Chart(document.getElementById('sellerRoiResearchChart'),{type:'bar',data:{labels:['Пессимист 2.5%','Реалист 6%','Оптимист 12.5%'],datasets:[{label:'Прибыль продавца',data:[10625,25500,53125],backgroundColor:[C.orangeBg,C.greenBg,C.cyanBg],borderColor:[C.orange,C.green,C.cyan],borderWidth:1.5,borderRadius:8},{label:'Стоимость бота (20 000р)',data:[20000,20000,20000],backgroundColor:'transparent',borderColor:C.red,borderWidth:1.5,borderDash:[5,5],type:'line',pointStyle:false,fill:false}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return(v/1000)+'к'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+
+// 13. Break-even Research
+new Chart(document.getElementById('breakEvenResearchChart'),{type:'line',data:{labels:['0','25','50','75','100','150','200','300','400','500'],datasets:[{label:'12.5% (оптим.)',data:[0,13281,26563,39844,53125,79688,106250,159375,212500,265625],borderColor:C.cyan,tension:.3,fill:false},{label:'6% (реалист)',data:[0,6375,12750,19125,25500,38250,51000,76500,102000,127500],borderColor:C.green,tension:.3,fill:false},{label:'2.5% (пессим.)',data:[0,2656,5313,7969,10625,15938,21250,31875,42500,53125],borderColor:C.orange,tension:.3,fill:false},{label:'Стоимость бота',data:[20000,20000,20000,20000,20000,20000,20000,20000,20000,20000],borderColor:C.red,borderDash:[8,4],pointStyle:false,fill:false}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{x:{title:{display:true,text:'Ссылок отправлено'},grid:{color:'#ffffff08'}},y:{ticks:{callback:function(v){return(v/1000)+'к'}},grid:{color:'#ffffff08'}}}}});
+
+// 14. Funnel Research
+new Chart(document.getElementById('funnelResearchChart'),{type:'bar',data:{labels:['Ссылок отправлено','Начали диалог (50%)','Заинтересованы (30%)','Купили реалист (12% диал. = 6 чел.)'],datasets:[{data:[100,50,15,6],backgroundColor:[C.blueBg,C.purpleBg,C.orangeBg,C.greenBg],borderColor:[C.blue,C.purple,C.orange,C.green],borderWidth:1.5,borderRadius:8}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#ffffff08'},title:{display:true,text:'Человек'}},y:{grid:{display:false}}}}});
+
+// 15. Bomzh compare old vs research (50 links, 1500r)
+new Chart(document.getElementById('bomzhCompareChart'),{type:'bar',data:{labels:['Пессимист','Реалист','Оптимист'],datasets:[{label:'Старые конверсии',data:[625,5938,19750],backgroundColor:C.redBg,borderColor:C.red,borderWidth:1.5,borderRadius:6},{label:'Исследовательские конверсии',data:[3813,11250,25063],backgroundColor:C.greenBg,borderColor:C.green,borderWidth:1.5,borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toLocaleString('ru')+' руб'}}}},scales:{y:{ticks:{callback:function(v){return(v/1000).toFixed(0)+'к'}},grid:{color:'#ffffff08'}},x:{grid:{display:false}}}}});
+// === SECTION 6: Network growth ===
+// 16. Top multiplier visualization
+new Chart(document.getElementById('topMultiplierChart'),{type:'bar',data:{labels:['Топ покупает бота','Команда: боты (10% от 40)','Команда: бомжи (50% от 40)','Бомжи: ссылки (20x50шт)','Юзеры бота (CTR 50%)','Продажи (реалист 12%)'],datasets:[{data:[1,4,20,1000,500,60],backgroundColor:[C.greenBg,C.cyanBg,C.orangeBg,C.blueBg,C.purpleBg,C.greenBg],borderColor:[C.green,C.cyan,C.orange,C.blue,C.purple,C.green],borderWidth:1.5,borderRadius:8}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.x.toLocaleString('ru')}}}},scales:{x:{type:'logarithmic',grid:{color:'#ffffff08'},ticks:{callback:function(v){return v.toLocaleString('ru')}}},y:{grid:{display:false}}}}});
+
+// 17-22. Network growth data
+var nd={
+  cautious:{
+    tops:[1,1,2,3,3,4],
+    bots:[5,7,12,18,20,26],
+    bomzhi:[20,35,55,80,100,130],
+    users:[50,88,138,200,250,325],
+    revenue:[103000,42250,103000,123750,43750,124500],
+    costs:[1726,1897,2122,2402,2628,2966]
+  },
+  avalanche:{
+    tops:[1,3,6,10,16,24],
+    bots:[5,16,32,55,88,132],
+    bomzhi:[25,70,160,300,500,760],
+    users:[63,175,400,750,1250,1900],
+    revenue:[103750,226750,333500,481000,690000,919000],
+    costs:[1784,2289,3304,4883,7138,10069]
+  },
+  viral:{
+    tops:[2,7,18,35,60,85],
+    bots:[10,35,85,170,290,450],
+    bomzhi:[50,180,450,900,1600,2800],
+    users:[125,450,1125,2250,4000,7000],
+    revenue:[207500,519500,1040500,1767500,2505000,3380000],
+    costs:[2064,3530,6574,11648,19540,33070]
+  }
+};
+['cautious','avalanche','viral'].forEach(function(k){
+  nd[k].profit=nd[k].revenue.map(function(r,i){return r-nd[k].costs[i]});
+  nd[k].cumProfit=[];var s=0;for(var i=0;i<nd[k].profit.length;i++){s+=nd[k].profit[i];nd[k].cumProfit.push(s)}
+});
+var nCharts={};
+var nLabels={cautious:'Осторожный',avalanche:'Лавина',viral:'Вирусный'};
+var nColors={cautious:C.orange,avalanche:C.green,viral:C.cyan};
+function nMkDs(key,sc){return{label:nLabels[sc],data:nd[sc][key],borderColor:nColors[sc],backgroundColor:nColors[sc]+'20',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointBackgroundColor:nColors[sc]}}
+function buildNetCharts(scenarios){
+  Object.keys(nCharts).forEach(function(k){if(nCharts[k])nCharts[k].destroy()});
+  nCharts.revenue=new Chart(document.getElementById('netRevenueChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('revenue',s)})},options:mkOpts(fmtRub)});
+  nCharts.profit=new Chart(document.getElementById('netProfitChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('profit',s)})},options:mkOpts(fmtRub)});
+  nCharts.bots=new Chart(document.getElementById('netBotsChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('bots',s)})},options:mkOpts(fmtNum)});
+  nCharts.bomzhi=new Chart(document.getElementById('netBomzhiChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('bomzhi',s)})},options:mkOpts(fmtNum)});
+  nCharts.tops=new Chart(document.getElementById('netTopsChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('tops',s)})},options:mkOpts(fmtNum)});
+  nCharts.cumProfit=new Chart(document.getElementById('netCumProfitChart'),{type:'line',data:{labels:months,datasets:scenarios.map(function(s){return nMkDs('cumProfit',s)})},options:mkOpts(fmtRub)});
+  var sc4=scenarios.indexOf('avalanche')>=0?'avalanche':scenarios[0];
+  nCharts.compare=new Chart(document.getElementById('compareGrowthChart'),{type:'bar',data:{labels:months,datasets:[{label:'Секция 4: Реалист',data:gd.real.revenue,backgroundColor:C.purpleBg,borderColor:C.purple,borderWidth:1.5,borderRadius:6},{label:'Секция 6: '+nLabels[sc4],data:nd[sc4].revenue,backgroundColor:C.greenBg,borderColor:C.green,borderWidth:1.5,borderRadius:6}]},options:mkOpts(fmtRub)});
+}
+function switchNet(mode,btn){document.querySelectorAll('.tabs:last-of-type .tab, .tabs')[document.querySelectorAll('.tabs').length-1].querySelectorAll?void 0:void 0;var tabs=btn.parentElement.querySelectorAll('.tab');tabs.forEach(function(t){t.classList.remove('active')});btn.classList.add('active');if(mode==='all')buildNetCharts(['cautious','avalanche','viral']);else buildNetCharts([mode])}
+buildNetCharts(['cautious','avalanche','viral']);
+</script>
+</body>
+</html>

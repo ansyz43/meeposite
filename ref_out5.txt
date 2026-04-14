@@ -1,0 +1,14 @@
+ id |  first_name   | last_name  | telegram_username | telegram_id | platform | bot_id 
+----+---------------+------------+-------------------+-------------+----------+--------
+ 26 | Инна • Долкар | Доржиева   | eshe_dolkar       |   456598810 | telegram |      6
+ 25 | Людмила       | Шабаганова | lshabaganova      |  1285996291 | telegram |      6
+ 24 | Саян          | Арамхиев   |                   |             | vk       |     15
+ 23 | Булат         | Итыгилов   |                   |             | vk       |     15
+ 21 | Дамдин        | Шагжиев    | doctor_damdin     |  1505500451 | telegram |      3
+ 20 | Jesus         |            | Mickey_Anus       |   839647729 | telegram |      3
+ 19 | Тамара        | Васильева  | Tamara_online     |   364230803 | telegram |      5
+ 18 | Сергей        |            | ansuz43           |   458500773 | telegram |      1
+ 17 | Bulat         |            | bulat_ayaprod     |   217296788 | telegram |      3
+ 16 | Инна • Долкар | Доржиева   | eshe_dolkar       |   456598810 | telegram |      3
+(10 rows)
+

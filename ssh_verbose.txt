@@ -1,0 +1,23 @@
+TRYING_VERBOSE 
+OpenSSH_for_Windows_9.5p2, LibreSSL 3.8.2
+debug1: Connecting to 5.42.112.91 [5.42.112.91] port 22.
+debug1: fd 3 clearing O_NONBLOCK
+debug1: Connection established.
+debug1: identity file C:\\Users\\Admin/.ssh/id_rsa type 0
+debug1: identity file C:\\Users\\Admin/.ssh/id_rsa-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ecdsa type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ecdsa-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ecdsa_sk type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ecdsa_sk-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ed25519 type 3
+debug1: identity file C:\\Users\\Admin/.ssh/id_ed25519-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ed25519_sk type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_ed25519_sk-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_xmss type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_xmss-cert type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_dsa type -1
+debug1: identity file C:\\Users\\Admin/.ssh/id_dsa-cert type -1
+debug1: Local version string SSH-2.0-OpenSSH_for_Windows_9.5
+Connection timed out during banner exchange
+Connection to 5.42.112.91 port 22 timed out
+EXIT_CODE=255 

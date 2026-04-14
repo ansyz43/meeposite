@@ -1,0 +1,6 @@
+S1 
+SSH_WORKS
+6910841-op215266.twc1.net
+ 10:04:55 up  2:15,  2 users,  load average: 0.08, 0.04, 0.01
+Connection to 5.42.112.91 closed by remote host.
+S2 

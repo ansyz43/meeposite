@@ -1,0 +1,7 @@
+NAME                     STATUS
+meeposite-backend-1      Up 40 minutes (healthy)
+meeposite-bot_worker-1   Up 3 hours (healthy)
+meeposite-db-1           Up 3 hours (healthy)
+meeposite-frontend-1     Up 2 minutes
+meeposite-nginx-1        Up 3 hours
+STATUS_DONE 

@@ -1,0 +1,51 @@
+STEP1 
+ALTER TABLE
+STEP2 
+UPDATE 1
+STEP3 
+DELETE 312
+STEP4 
+DELETE 3
+STEP5 
+DELETE 5
+STEP6 
+DELETE 0
+Connection to 5.42.112.91 closed by remote host.
+STEP7 
+DELETE 4
+STEP8 
+DELETE 0
+STEP9 
+DELETE 14
+STEP10 
+DELETE 1
+STEP11 
+DELETE 11
+STEP12 
+UPDATE 11
+Connection to 5.42.112.91 closed by remote host.
+STEP13 
+UPDATE 1
+VERIFY1 
+       email        | is_admin 
+--------------------+----------
+ kisuke43@gmail.com | t
+(1 row)
+
+VERIFY2 
+ id |  bot_username   | platform | user_id 
+----+-----------------+----------+---------
+  9 | fitmeepo2bot    | telegram |        
+ 10 | fitmeepobot     | telegram |        
+ 11 | fitgtbot        | telegram |        
+  3 | meepofl_bot     | telegram |        
+  5 | fitline04bot    | telegram |        
+  1 | FLkador_bot     | telegram |        
+ 12 | itfvl           | vk       |        
+  2 | testingfitl_bot | telegram |        
+  4 | fitline05bot    | telegram |        
+  6 | fitline03bot    | telegram |        
+  8 | Fitline01bot    | telegram |        
+(11 rows)
+
+ALLDONE 

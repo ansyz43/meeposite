@@ -1,0 +1,6 @@
+meeposite-bot_worker-1 Up 53 seconds (healthy)
+meeposite-backend-1 Up 58 minutes (healthy)
+meeposite-frontend-1 Up 58 minutes
+meeposite-nginx-1 Up 28 hours
+meeposite-db-1 Up 28 hours (healthy)
+Connection to 5.42.112.91 closed by remote host.

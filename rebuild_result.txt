@@ -1,0 +1,6 @@
+REBUILDING 
+ Image meeposite-backend Building 
+ Image meeposite-frontend Building 
+#1 [internal] load local bake definitions
+Timeout, server 5.42.112.91 not responding.
+DONE 

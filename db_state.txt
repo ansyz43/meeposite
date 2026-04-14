@@ -1,0 +1,14 @@
+CHECK1 
+ERROR:  column "is_admin" does not exist
+LINE 1: SELECT email, is_admin FROM users;
+                      ^
+CHECK2 
+      POSTGRES_USER: meepo
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: meepo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meepo"]
+      interval: 5s
+CHECK3 

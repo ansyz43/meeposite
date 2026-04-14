@@ -1,0 +1,12 @@
+=== MIGRATION OUTPUT === 
+Connection to 5.42.112.91 closed by remote host.
+=== DB CHECK === 
+Connection timed out during banner exchange
+Connection to 5.42.112.91 port 22 timed out
+=== BOTS === 
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "postgres" does not exist
+Connection to 5.42.112.91 closed by remote host.
+=== DOCKER === 
+Connection timed out during banner exchange
+Connection to 5.42.112.91 port 22 timed out
+=== DONE === 

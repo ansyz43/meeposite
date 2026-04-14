@@ -1,0 +1,24 @@
+#14 exporting config sha256:3ec5c7f92932a4fa3f0b6a296103771c7c838aa24d8948daa8bf98232ee14e78 done
+#14 exporting attestation manifest sha256:bcd029f0e37caa0b46b77d28eef690092756337b175d01e62a38d6c3ba01819d
+#14 exporting attestation manifest sha256:bcd029f0e37caa0b46b77d28eef690092756337b175d01e62a38d6c3ba01819d 0.0s done
+#14 exporting manifest list sha256:ea41464aee70bf0d917a6ab3ce819fe503670a966524f1ae6927660826d9681a 0.0s done
+#14 naming to docker.io/library/meeposite-frontend:latest done
+#14 unpacking to docker.io/library/meeposite-frontend:latest 0.0s done
+#14 DONE 0.1s
+
+#15 resolving provenance for metadata file
+#15 DONE 0.0s
+ Image meeposite-frontend Built 
+ Container meeposite-frontend-1 Recreate 
+ Container meeposite-frontend-1 Recreated 
+ Container meeposite-frontend-1 Starting 
+ Container meeposite-frontend-1 Started 
+---STATUS---
+NAMES STATUS
+meeposite-frontend-1 Up 3 minutes
+meeposite-backend-1 Up 2 hours (healthy)
+meeposite-bot_worker-1 Up 4 hours (healthy)
+meeposite-nginx-1 Up 4 hours
+meeposite-db-1 Up 4 hours (healthy)
+Connection to 5.42.112.91 closed by remote host.
+DONE 

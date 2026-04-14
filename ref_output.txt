@@ -1,0 +1,8 @@
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "morphius" does not exist
+---PARTNERS---
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "morphius" does not exist
+---SESSIONS---
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "morphius" does not exist
+---USERS-INNA-MASHA---
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "morphius" does not exist
+---DONE---

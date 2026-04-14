@@ -1,0 +1,11 @@
+
+#15 resolving provenance for metadata file
+#15 DONE 0.0s
+ Image meeposite-frontend Built 
+ Container meeposite-frontend-1 Recreate 
+ Container meeposite-frontend-1 Recreated 
+ Container meeposite-frontend-1 Starting 
+ Container meeposite-frontend-1 Started 
+---
+Connection to 5.42.112.91 closed by remote host.
+DONE 
