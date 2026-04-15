@@ -23,7 +23,7 @@ from sqlalchemy import select, update
 
 from worker.config import settings
 from worker.database import async_session
-from worker.models import Bot as BotModel, User, Contact, Message
+from worker.models import Bot as BotModel, User, Contact, Message, ReferralPartner, ReferralSession
 from worker.crypto import decrypt_token
 from worker.ai_service import get_ai_response
 from worker.vk_handler import start_vk_bot as _start_vk_bot
@@ -195,6 +195,9 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
     """Create a dispatcher with handlers for a specific bot."""
     dp = Dispatcher()
 
+    # Per-contact partner seller_link override: telegram_id -> seller_link
+    partner_links: dict[int, str] = {}
+
     @dp.update.outer_middleware()
     async def log_all_updates(handler, event, data):
         logger.info(f"[BOT#{bot_db_id}] Update received: type={event.event_type}")
@@ -210,8 +213,56 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         logger.info(f"[BOT#{bot_db_id}] /start from user {message.from_user.id}")
         if _is_duplicate(message.chat.id, message.message_id):
             return
+
+        # Parse deep-link payload: /start p_REFCODE
+        payload = message.text.split(maxsplit=1)[1] if message.text and " " in message.text else None
+
         async with async_session() as db:
             contact = await get_or_create_contact(db, bot_db_id, message.from_user)
+
+            # Handle partner deep-link
+            if payload and payload.startswith("p_"):
+                ref_code = payload[2:]
+                try:
+                    result = await db.execute(
+                        select(ReferralPartner).where(
+                            ReferralPartner.ref_code == ref_code,
+                            ReferralPartner.bot_id == bot_db_id,
+                            ReferralPartner.is_active == True,
+                        )
+                    )
+                    partner = result.scalar_one_or_none()
+                    if partner and partner.credits > 0:
+                        # Check if session already exists for this partner+user
+                        existing = await db.execute(
+                            select(ReferralSession).where(
+                                ReferralSession.partner_id == partner.id,
+                                ReferralSession.telegram_id == message.from_user.id,
+                            )
+                        )
+                        session_rec = existing.scalar_one_or_none()
+                        if session_rec:
+                            # Reactivate existing session
+                            session_rec.is_active = True
+                            session_rec.expires_at = _utcnow() + datetime.timedelta(days=30)
+                        else:
+                            # Create new session, decrement credits
+                            session_rec = ReferralSession(
+                                partner_id=partner.id,
+                                contact_id=contact.id,
+                                telegram_id=message.from_user.id,
+                                expires_at=_utcnow() + datetime.timedelta(days=30),
+                            )
+                            db.add(session_rec)
+                            partner.credits -= 1
+                        # Cache partner's seller_link for this user
+                        partner_links[message.from_user.id] = partner.seller_link
+                        logger.info(f"[BOT#{bot_db_id}] Partner session: ref={ref_code} user={message.from_user.id} credits_left={partner.credits}")
+                    elif partner and partner.credits <= 0:
+                        logger.info(f"[BOT#{bot_db_id}] Partner {ref_code} has no credits left")
+                except Exception as e:
+                    logger.error(f"[BOT#{bot_db_id}] Partner deep-link error: {e}", exc_info=True)
+
             greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
             await save_message(db, contact.id, "assistant", greeting)
             await db.commit()
@@ -232,6 +283,32 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         logger.info(f"[BOT#{bot_db_id}] Message from user {message.from_user.id}: {message.text[:50]}")
         if _is_duplicate(message.chat.id, message.message_id):
             return
+
+        # Determine effective seller_link: partner override or bot owner's
+        effective_seller_link = partner_links.get(message.from_user.id) or seller_link
+
+        # If not in memory cache, check DB for active partner session
+        if not partner_links.get(message.from_user.id):
+            try:
+                async with async_session() as db_check:
+                    result = await db_check.execute(
+                        select(ReferralPartner.seller_link)
+                        .join(ReferralSession, ReferralSession.partner_id == ReferralPartner.id)
+                        .where(
+                            ReferralSession.telegram_id == message.from_user.id,
+                            ReferralSession.is_active == True,
+                            ReferralSession.expires_at > _utcnow(),
+                            ReferralPartner.bot_id == bot_db_id,
+                        )
+                        .limit(1)
+                    )
+                    partner_sl = result.scalar_one_or_none()
+                    if partner_sl:
+                        partner_links[message.from_user.id] = partner_sl
+                        effective_seller_link = partner_sl
+            except Exception:
+                pass
+
         async with async_session() as db:
             contact = await get_or_create_contact(db, bot_db_id, message.from_user)
             user_text = message.text
@@ -259,7 +336,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                 async with _ai_semaphore:
                     ai_response = await asyncio.wait_for(
                         get_ai_response(
-                            assistant_name, seller_name, bool(seller_link),
+                            assistant_name, seller_name, bool(effective_seller_link),
                             history, user_text,
                         ),
                         timeout=60.0,
@@ -290,10 +367,10 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
         # Replace [ССЫЛКА] placeholder with actual seller link
         link_was_sent = False
-        if not seller_link and '[ССЫЛКА]' in ai_response:
+        if not effective_seller_link and '[ССЫЛКА]' in ai_response:
             # Safety: strip raw [ССЫЛКА] markers if no seller link configured
             ai_response = ai_response.replace('[ССЫЛКА]', '').strip()
-        elif seller_link and '[ССЫЛКА]' in ai_response:
+        elif effective_seller_link and '[ССЫЛКА]' in ai_response:
             # Split response: send text and link as separate messages
             parts = ai_response.split('[ССЫЛКА]')
             text_before = parts[0].rstrip(" \u2014-\n")
@@ -303,7 +380,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
         # Save AI response in a new short session
         async with async_session() as db:
-            full_text = f"{ai_response}\n{seller_link}" if link_was_sent else ai_response
+            full_text = f"{ai_response}\n{effective_seller_link}" if link_was_sent else ai_response
             await save_message(db, contact.id, "assistant", full_text)
             if link_was_sent:
                 from sqlalchemy import update
@@ -312,7 +389,7 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         if ai_response.strip():
             await message.answer(ai_response)
         if link_was_sent:
-            await message.answer(seller_link)
+            await message.answer(effective_seller_link)
         if link_was_sent and text_after.strip():
             await message.answer(text_after)
 

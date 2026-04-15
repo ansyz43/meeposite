@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 logger = logging.getLogger(__name__)
 
 from app.database import get_db
-from app.models import User, Bot
+from app.models import User, Bot, ReferralPartner
 from app.schemas import BotUpdateRequest, BotResponse, BotStatusResponse, VkConnectRequest
 from app.auth import get_current_user
 from app.config import settings
@@ -224,6 +224,16 @@ async def disconnect_bot(
     bot.greeting_message = None
     bot.bot_description = None
     bot.avatar_url = None
+    bot.allow_partners = False
+
+    # Deactivate orphaned partner records for this bot
+    from sqlalchemy import update
+    await db.execute(
+        update(ReferralPartner)
+        .where(ReferralPartner.bot_id == bot.id)
+        .values(is_active=False)
+    )
+
     await db.commit()
     return {"message": "Bot disconnected"}
 

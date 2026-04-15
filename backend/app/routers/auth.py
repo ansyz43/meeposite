@@ -34,6 +34,16 @@ def _generate_user_ref_code() -> str:
     return secrets.token_urlsafe(6)  # 8 chars
 
 
+async def _unique_ref_code(db: AsyncSession) -> str:
+    """Generate a unique user ref_code with collision retry."""
+    for _ in range(5):
+        code = _generate_user_ref_code()
+        exists = await db.execute(select(User.id).where(User.ref_code == code))
+        if not exists.scalar_one_or_none():
+            return code
+    return secrets.token_urlsafe(8)  # fallback to longer code
+
+
 def _generate_reset_code() -> str:
     return str(random.SystemRandom().randint(100000, 999999))
 
@@ -86,7 +96,7 @@ async def register(request: Request, data: RegisterRequest, response: Response, 
         email=data.email,
         password_hash=hash_password(data.password),
         name=data.name,
-        ref_code=_generate_user_ref_code(),
+        ref_code=await _unique_ref_code(db),
         referred_by_id=referred_by_id,
     )
     db.add(user)
@@ -274,7 +284,7 @@ async def auth_telegram(
             name=data.first_name + (f" {data.last_name}" if data.last_name else ""),
             telegram_id=data.id,
             auth_provider="telegram",
-            ref_code=_generate_user_ref_code(),
+            ref_code=await _unique_ref_code(db),
         )
         # Resolve referrer
         if data.ref_code:
@@ -362,7 +372,7 @@ async def auth_google(
                 name=name,
                 google_id=google_id,
                 auth_provider="google",
-                ref_code=_generate_user_ref_code(),
+                ref_code=await _unique_ref_code(db),
             )
             if data.ref_code:
                 ref_result = await db.execute(select(User).where(User.ref_code == data.ref_code))

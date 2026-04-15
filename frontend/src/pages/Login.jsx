@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LogIn } from 'lucide-react'
 
@@ -11,6 +11,16 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  // Redirect to register if referral code present
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      navigate(`/register?ref=${encodeURIComponent(ref)}`, { replace: true })
+    }
+  }, [searchParams, navigate])
 
   // Handle Telegram auth result (redirect fallback — mobile or popup)
   useEffect(() => {
