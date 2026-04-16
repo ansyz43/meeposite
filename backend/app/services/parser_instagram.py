@@ -46,9 +46,6 @@ def _get_or_create_client():
     from instagrapi import Client
     from instagrapi.exceptions import ChallengeRequired
 
-    if not settings.INSTAGRAM_USERNAME or not settings.INSTAGRAM_PASSWORD:
-        raise RuntimeError("INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD not configured")
-
     cl = Client()
     cl.delay_range = [2, 5]
 
@@ -57,7 +54,7 @@ def _get_or_create_client():
         cl.set_proxy(settings.INSTAGRAM_PROXY)
         logger.info("instagrapi: using proxy")
 
-    # Try loading saved session
+    # 1. Try loading saved session
     if _SESSION_PATH.exists():
         try:
             cl.load_settings(_SESSION_PATH)
@@ -68,9 +65,25 @@ def _get_or_create_client():
         except ChallengeRequired:
             raise _ChallengeNeeded("challenge")
         except Exception as e:
-            logger.warning("instagrapi: saved session invalid, re-logging: %s", e)
+            logger.warning("instagrapi: saved session invalid: %s", e)
 
-    # Fresh login
+    # 2. Login by browser sessionid (preferred — bypasses IP blacklist)
+    if settings.INSTAGRAM_SESSION_ID:
+        try:
+            cl.login_by_sessionid(settings.INSTAGRAM_SESSION_ID)
+            cl.dump_settings(_SESSION_PATH)
+            logger.info("instagrapi: logged in by sessionid, session saved")
+            _client = cl
+            return _client
+        except ChallengeRequired:
+            raise _ChallengeNeeded("challenge")
+        except Exception as e:
+            logger.warning("instagrapi: sessionid login failed: %s", e)
+
+    # 3. Fallback: username/password login
+    if not settings.INSTAGRAM_USERNAME or not settings.INSTAGRAM_PASSWORD:
+        raise RuntimeError("INSTAGRAM_SESSION_ID or INSTAGRAM_USERNAME+PASSWORD required")
+
     try:
         cl.login(settings.INSTAGRAM_USERNAME, settings.INSTAGRAM_PASSWORD)
     except ChallengeRequired:

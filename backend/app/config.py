@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # Content Plan — Instagram parsing via instagrapi
     INSTAGRAM_USERNAME: str = ""
     INSTAGRAM_PASSWORD: str = ""
+    INSTAGRAM_SESSION_ID: str = ""  # browser cookie sessionid — preferred over password login
     INSTAGRAM_PROXY: str = ""  # e.g. http://user:pass@host:port or socks5://user:pass@host:port
 
     model_config = {"env_file": ".env"}
