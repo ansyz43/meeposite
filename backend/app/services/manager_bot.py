@@ -220,6 +220,15 @@ async def run_manager_bot_polling() -> None:
         logger.info("MANAGER_BOT_TOKEN not set, manager bot polling disabled")
         return
 
+    # Only one gunicorn worker should poll — use file lock
+    try:
+        import fcntl
+        _lock_fd = open("/tmp/manager_bot_polling.lock", "w")
+        fcntl.flock(_lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (ImportError, OSError):
+        logger.info("Another worker is already polling manager bot, skipping")
+        return
+
     logger.info("Starting manager bot polling (username=%s)", settings.MANAGER_BOT_USERNAME)
 
     async with httpx.AsyncClient() as client:
