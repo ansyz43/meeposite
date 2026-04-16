@@ -157,11 +157,14 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
         text = media.caption_text or ""
         if not text.strip():
             continue
+        taken = media.taken_at
+        if taken and taken.tzinfo is not None:
+            taken = taken.replace(tzinfo=None)
         posts.append({
             "text": text[:4000],
             "views": media.view_count,
             "reactions": media.like_count,
-            "posted_at": media.taken_at,
+            "posted_at": taken,
         })
 
     # Save session after success
