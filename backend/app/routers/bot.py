@@ -260,7 +260,8 @@ async def create_bot(
 ):
     """Generate a t.me/newbot link for managed bot creation."""
     user = await _load_user_bots(user, db)
-    if _get_bot_by_platform(user, "telegram"):
+    active_tg = next((b for b in user.bots if b.platform == "telegram" and b.is_active), None)
+    if active_tg:
         raise HTTPException(status_code=400, detail="У вас уже есть Telegram-бот")
 
     if not settings.MANAGER_BOT_TOKEN:

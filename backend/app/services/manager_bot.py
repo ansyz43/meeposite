@@ -158,9 +158,9 @@ async def _handle_managed_bot_update(update: dict) -> None:
             logger.warning("Cannot determine platform user for managed bot %s", bot_username)
             return
 
-        # 3. Check user doesn't already have a telegram bot
+        # 3. Check user doesn't already have an active telegram bot
         result = await db.execute(
-            select(Bot).where(Bot.user_id == platform_user_id, Bot.platform == "telegram").limit(1)
+            select(Bot).where(Bot.user_id == platform_user_id, Bot.platform == "telegram", Bot.is_active == True).limit(1)
         )
         existing = result.scalar_one_or_none()
         if existing:
