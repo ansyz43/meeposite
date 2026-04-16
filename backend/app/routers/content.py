@@ -463,6 +463,11 @@ async def auto_detect_profile(
     platform = data.get("platform", "").lower()
     username = data.get("username", "").strip().lstrip("@").lower()
 
+    # Extract username from Instagram URL if full link was pasted
+    if platform == "instagram":
+        from app.services.parser_instagram import _extract_username
+        username = _extract_username(username)
+
     if not username:
         raise HTTPException(400, "Укажите username аккаунта")
     if platform not in ("telegram", "instagram"):

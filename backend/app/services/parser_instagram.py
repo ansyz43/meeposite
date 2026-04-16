@@ -6,6 +6,7 @@ Global rate limit: max 30 parse ops / hour.
 """
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
@@ -25,6 +26,21 @@ _CACHE_TTL_HOURS = 24
 _client = None
 _client_lock = asyncio.Lock()
 _SESSION_PATH = Path("/app/ig_session.json")
+
+_IG_URL_RE = re.compile(
+    r"(?:https?://)?(?:www\.)?instagram\.com/([A-Za-z0-9_.]+)",
+    re.IGNORECASE,
+)
+
+
+def _extract_username(raw: str) -> str:
+    """Extract clean username from an Instagram URL or raw input."""
+    raw = raw.strip().lstrip("@").lower()
+    m = _IG_URL_RE.search(raw)
+    if m:
+        return m.group(1).rstrip("/")
+    # Strip query params / fragments that might be left
+    return raw.split("?")[0].split("#")[0].strip("/")
 
 
 class _ChallengeNeeded(RuntimeError):
@@ -171,7 +187,7 @@ async def parse_instagram_profile(
     max_posts: int = 20,
 ) -> dict:
     """Parse a public Instagram profile. Returns summary dict."""
-    username = username.lstrip("@").strip().lower()
+    username = _extract_username(username)
 
     # Check cache
     if not force:
