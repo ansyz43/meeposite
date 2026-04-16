@@ -17,7 +17,7 @@ cryptography>=42.0.0
 slowapi==0.1.9
 aiosmtplib==3.0.2
 sentry-sdk[fastapi]>=2.0.0
-aiograpi>=2.0.0
+instagrapi>=2.0.0
 beautifulsoup4>=4.12
 
 # ─── Dev / Test ───
