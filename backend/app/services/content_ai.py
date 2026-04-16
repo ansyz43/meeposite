@@ -46,7 +46,7 @@ async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
         "model": _MODEL,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": 4000,
+        "max_completion_tokens": 4000,
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.post(_get_openai_url(), json=payload, headers=headers)
