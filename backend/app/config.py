@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     TELEGRAM_BOT_TOKEN_LOGIN: str = ""
 
+    # Managed Bots — auto-creation via Bot API 9.6
+    MANAGER_BOT_TOKEN: str = ""
+    MANAGER_BOT_USERNAME: str = "Fitline01bot"
+
     # Content Plan — Telegram User API for channel parsing
     TELEGRAM_API_ID: int = 0
     TELEGRAM_API_HASH: str = ""

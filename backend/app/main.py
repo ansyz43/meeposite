@@ -31,9 +31,20 @@ if settings.SENTRY_DSN:
 limiter = Limiter(key_func=get_remote_address)
 
 
+import asyncio
+
+from app.services.manager_bot import run_manager_bot_polling
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    task = asyncio.create_task(run_manager_bot_polling())
     yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(title="Meepo API", version="1.0.0", lifespan=lifespan)

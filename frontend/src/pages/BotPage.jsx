@@ -117,6 +117,11 @@ export default function BotPage() {
     }
   }
 
+  // Managed bot creation
+  const [creationLink, setCreationLink] = useState(null)
+  const [creationPolling, setCreationPolling] = useState(false)
+  const pollingRef = useRef(null)
+
   // ── Telegram actions ──
 
   async function claimBot() {
@@ -134,6 +139,47 @@ export default function BotPage() {
     }
     setClaiming(false)
   }
+
+  async function createManagedBot() {
+    setError('')
+    setClaiming(true)
+    try {
+      const { data } = await api.post('/api/bot/create')
+      setCreationLink(data.link)
+      window.open(data.link, '_blank')
+      // Start polling for creation status
+      setCreationPolling(true)
+    } catch (err) {
+      const d = err.response?.data?.detail
+      if (d === 'У вас уже есть Telegram-бот') {
+        await loadBots()
+        await loadProfile()
+      } else {
+        setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка создания бота')
+      }
+    }
+    setClaiming(false)
+  }
+
+  // Poll creation status
+  useEffect(() => {
+    if (!creationPolling) return
+    pollingRef.current = setInterval(async () => {
+      try {
+        const { data } = await api.get('/api/bot/creation-status')
+        if (data.status === 'created') {
+          clearInterval(pollingRef.current)
+          setCreationPolling(false)
+          setCreationLink(null)
+          setSuccess('Бот создан! Заполните настройки.')
+          setShowTgGroup(true)
+          await loadBots()
+          await loadProfile()
+        }
+      } catch { /* ignore */ }
+    }, 3000)
+    return () => clearInterval(pollingRef.current)
+  }, [creationPolling])
 
   async function saveTgSettings(e) {
     e.preventDefault()
@@ -303,19 +349,46 @@ export default function BotPage() {
           {tabBar}
           {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
           {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
-          <EmptyState
-            icon={Bot}
-            title="У вас пока нет Telegram-бота"
-            description="Нажмите кнопку ниже — система автоматически назначит вам персонального Telegram-бота с ИИ"
-            action={
-              <button onClick={claimBot} disabled={claiming}
-                className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3 disabled:opacity-50">
-                <span className="relative z-10 flex items-center gap-2">
-                  <Plus size={20} /> {claiming ? 'Создание...' : 'Создать бота'}
-                </span>
-              </button>
-            }
-          />
+
+          {creationPolling ? (
+            <EmptyState
+              icon={Bot}
+              title="Создайте бота в Telegram"
+              description="Откройте ссылку в Telegram и подтвердите создание бота. Страница обновится автоматически."
+              action={
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-2 text-white/60">
+                    <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Ожидание создания бота...</span>
+                  </div>
+                  {creationLink && (
+                    <a href={creationLink} target="_blank" rel="noopener noreferrer"
+                      className="btn-primary inline-flex items-center gap-2 text-sm px-6 py-2">
+                      <span className="relative z-10 flex items-center gap-2">
+                        <ExternalLink size={16} /> Открыть ссылку снова
+                      </span>
+                    </a>
+                  )}
+                </div>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Bot}
+              title="У вас пока нет Telegram-бота"
+              description="Нажмите кнопку — система создаст вам персонального Telegram-бота с ИИ"
+              action={
+                <div className="flex flex-col items-center gap-3">
+                  <button onClick={createManagedBot} disabled={claiming}
+                    className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3 disabled:opacity-50">
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Plus size={20} /> {claiming ? 'Создание...' : 'Создать бота'}
+                    </span>
+                  </button>
+                </div>
+              }
+            />
+          )}
         </div>
       )
     }

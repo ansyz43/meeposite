@@ -165,6 +165,26 @@ class CashbackTransaction(Base):
     from_user: Mapped["User"] = relationship("User", foreign_keys=[from_user_id])
 
 
+# ── Managed Bots ─────────────────────────────────────────────
+
+class PendingBotCreation(Base):
+    """Tracks pending managed bot creation via Bot API 9.6."""
+    __tablename__ = "pending_bot_creations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    suggested_username: Mapped[str] = mapped_column(String(255), nullable=False)
+    suggested_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    bot_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | created | failed
+    bot_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+    completed_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+    bot: Mapped["Bot | None"] = relationship("Bot")
+
+
 # ── Content Plan ─────────────────────────────────────────────
 
 class ContentProfile(Base):

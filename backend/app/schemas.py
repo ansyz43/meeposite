@@ -139,6 +139,22 @@ class VkConnectRequest(BaseModel):
         return v
 
 
+# --- Managed Bot creation ---
+class CreateBotRequest(BaseModel):
+    name: str | None = Field(None, max_length=64)
+
+
+class CreateBotResponse(BaseModel):
+    link: str
+    suggested_username: str
+    pending_id: int
+
+
+class CreationStatusResponse(BaseModel):
+    status: str  # none | pending | created | failed
+    bot: BotResponse | None = None
+
+
 # --- Contacts ---
 class ContactResponse(BaseModel):
     id: int

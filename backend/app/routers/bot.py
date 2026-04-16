@@ -14,8 +14,8 @@ from sqlalchemy.orm import selectinload
 logger = logging.getLogger(__name__)
 
 from app.database import get_db
-from app.models import User, Bot, ReferralPartner
-from app.schemas import BotUpdateRequest, BotResponse, BotStatusResponse, VkConnectRequest
+from app.models import User, Bot, ReferralPartner, PendingBotCreation
+from app.schemas import BotUpdateRequest, BotResponse, BotStatusResponse, VkConnectRequest, CreateBotRequest, CreateBotResponse, CreationStatusResponse
 from app.auth import get_current_user
 from app.config import settings
 from app.services.crypto import decrypt_token, encrypt_token
@@ -248,6 +248,90 @@ async def bot_status(
     if not bot:
         return BotStatusResponse(is_active=False, bot_username=None)
     return BotStatusResponse(is_active=bot.is_active, bot_username=bot.bot_username)
+
+
+# ── Managed Bots (auto-creation) ──
+
+@router.post("/create", response_model=CreateBotResponse)
+async def create_bot(
+    data: CreateBotRequest | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a t.me/newbot link for managed bot creation."""
+    user = await _load_user_bots(user, db)
+    if _get_bot_by_platform(user, "telegram"):
+        raise HTTPException(status_code=400, detail="У вас уже есть Telegram-бот")
+
+    if not settings.MANAGER_BOT_TOKEN:
+        raise HTTPException(status_code=503, detail="Автоматическое создание ботов не настроено")
+
+    # Check for existing pending creation
+    result = await db.execute(
+        select(PendingBotCreation).where(
+            PendingBotCreation.user_id == user.id,
+            PendingBotCreation.status == "pending",
+        ).limit(1)
+    )
+    existing_pending = result.scalar_one_or_none()
+    if existing_pending:
+        link = f"https://t.me/newbot/{settings.MANAGER_BOT_USERNAME}/{existing_pending.suggested_username}"
+        if existing_pending.suggested_name:
+            link += f"?name={existing_pending.suggested_name.replace(' ', '+')}"
+        return CreateBotResponse(
+            link=link,
+            suggested_username=existing_pending.suggested_username,
+            pending_id=existing_pending.id,
+        )
+
+    suggested_username = f"meepo_u{user.id}_bot"
+    suggested_name = data.name if data and data.name else f"Ассистент {user.name}"
+
+    pending = PendingBotCreation(
+        user_id=user.id,
+        suggested_username=suggested_username,
+        suggested_name=suggested_name,
+    )
+    db.add(pending)
+    await db.commit()
+    await db.refresh(pending)
+
+    link = f"https://t.me/newbot/{settings.MANAGER_BOT_USERNAME}/{suggested_username}"
+    if suggested_name:
+        link += f"?name={suggested_name.replace(' ', '+')}"
+
+    return CreateBotResponse(
+        link=link,
+        suggested_username=suggested_username,
+        pending_id=pending.id,
+    )
+
+
+@router.get("/creation-status", response_model=CreationStatusResponse)
+async def creation_status(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if managed bot creation has completed."""
+    result = await db.execute(
+        select(PendingBotCreation).where(
+            PendingBotCreation.user_id == user.id,
+        ).order_by(PendingBotCreation.created_at.desc()).limit(1)
+    )
+    pending = result.scalar_one_or_none()
+    if not pending:
+        return CreationStatusResponse(status="none")
+
+    if pending.status == "created":
+        # Fetch the bot
+        user = await _load_user_bots(user, db)
+        bot = _get_bot_by_platform(user, "telegram")
+        return CreationStatusResponse(
+            status="created",
+            bot=_bot_response(bot) if bot else None,
+        )
+
+    return CreationStatusResponse(status=pending.status)
 
 
 # ── VK bot endpoints ──
