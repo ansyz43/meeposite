@@ -27,15 +27,36 @@ for q in queries:
                 seen.add(u.username)
                 results.append({
                     "username": u.username,
-                    "full_name": u.full_name,
-                    "followers": u.follower_count,
-                    "is_private": u.is_private,
+                    "full_name": u.full_name or "",
+                    "pk": str(u.pk),
                 })
         time.sleep(3)
     except Exception as e:
         print(f"ERR [{q}]: {e}", file=sys.stderr)
         time.sleep(5)
 
-results.sort(key=lambda x: x["followers"], reverse=True)
-for r in results[:50]:
-    print(f"{r['username']}|{r['full_name']}|{r['followers']}")
+# Now fetch follower count for each (user_info)
+final = []
+for r in results:
+    try:
+        info = cl.user_info(int(r["pk"]))
+        final.append({
+            "username": r["username"],
+            "full_name": r["full_name"],
+            "followers": info.follower_count,
+            "media_count": info.media_count,
+        })
+        time.sleep(1)
+    except Exception as e:
+        print(f"ERR info [{r['username']}]: {e}", file=sys.stderr)
+        final.append({
+            "username": r["username"],
+            "full_name": r["full_name"],
+            "followers": 0,
+            "media_count": 0,
+        })
+        time.sleep(3)
+
+final.sort(key=lambda x: x["followers"], reverse=True)
+for r in final[:50]:
+    print(f"{r['username']}|{r['full_name']}|{r['followers']}|{r['media_count']}")
