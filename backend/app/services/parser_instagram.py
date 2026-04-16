@@ -106,14 +106,21 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
 
     try:
         user_id = cl.user_id_from_username(username)
-    except Exception as e:
-        err_str = str(e).lower()
-        if "challenge" in err_str:
-            _reset_client()
-            return {"error": "Instagram требует подтверждение. Запустите: docker compose exec -it backend python scripts/ig_login.py"}
-        if "not found" in err_str or "not exist" in err_str:
+    except Exception:
+        # Public GQL endpoint may be rate-limited (429); fallback to search
+        try:
+            results = cl.search_users_v1(username, count=1)
+            match = next((u for u in results if u.username.lower() == username.lower()), None)
+            if match:
+                user_id = match.pk
+            else:
+                return {"error": f"Профиль @{username} не найден"}
+        except Exception as e2:
+            err_str = str(e2).lower()
+            if "challenge" in err_str:
+                _reset_client()
+                return {"error": "Instagram требует подтверждение. Запустите: docker compose exec -it backend python scripts/ig_login.py"}
             return {"error": f"Профиль @{username} не найден"}
-        return {"error": f"Ошибка Instagram: {e}"}
 
     try:
         medias = cl.user_medias(user_id, amount=max_posts)
