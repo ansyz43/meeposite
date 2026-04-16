@@ -15,7 +15,8 @@ else:
     cl.login_by_sessionid(sid)
     cl.dump_settings(session_file)
 
-queries = ["fitline", "фитлайн", "pm international", "fitline russia", "fitline health"]
+queries = ["fitline", "фитлайн", "pm international", "fitline russia", "fitline health",
+           "fitline germany", "fitline partner", "fitline wellness", "pminternational"]
 seen = set()
 results = []
 
@@ -35,28 +36,7 @@ for q in queries:
         print(f"ERR [{q}]: {e}", file=sys.stderr)
         time.sleep(5)
 
-# Now fetch follower count for each (user_info)
-final = []
+# Just print usernames — skip user_info to avoid 429
+print(f"TOTAL: {len(results)} accounts found")
 for r in results:
-    try:
-        info = cl.user_info(int(r["pk"]))
-        final.append({
-            "username": r["username"],
-            "full_name": r["full_name"],
-            "followers": info.follower_count,
-            "media_count": info.media_count,
-        })
-        time.sleep(1)
-    except Exception as e:
-        print(f"ERR info [{r['username']}]: {e}", file=sys.stderr)
-        final.append({
-            "username": r["username"],
-            "full_name": r["full_name"],
-            "followers": 0,
-            "media_count": 0,
-        })
-        time.sleep(3)
-
-final.sort(key=lambda x: x["followers"], reverse=True)
-for r in final[:50]:
-    print(f"{r['username']}|{r['full_name']}|{r['followers']}|{r['media_count']}")
+    print(f"{r['username']}|{r['full_name']}|{r['pk']}")
