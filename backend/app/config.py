@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://meepo:changeme@localhost:5432/meepo"
     SECRET_KEY: str = "super-secret-key-change-in-production"
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""  # e.g. Cloudflare AI Gateway URL
     CORS_ORIGINS: str = "http://localhost:3000"
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -42,9 +43,10 @@ class Settings(BaseSettings):
     MANAGER_BOT_TOKEN: str = ""
     MANAGER_BOT_USERNAME: str = "Fitline01bot"
 
-    # Content Plan — Instagram parsing via aiograpi
+    # Content Plan — Instagram parsing via instagrapi
     INSTAGRAM_USERNAME: str = ""
     INSTAGRAM_PASSWORD: str = ""
+    INSTAGRAM_PROXY: str = ""  # e.g. http://user:pass@host:port or socks5://user:pass@host:port
 
     model_config = {"env_file": ".env"}
 

@@ -22,9 +22,16 @@ from app.models import (
 
 logger = logging.getLogger(__name__)
 
-_OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+_DEFAULT_OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _MODEL = "gpt-5.4"
 _TIMEOUT = 90
+
+
+def _get_openai_url() -> str:
+    if settings.OPENAI_BASE_URL:
+        base = settings.OPENAI_BASE_URL.rstrip("/")
+        return f"{base}/chat/completions"
+    return _DEFAULT_OPENAI_URL
 
 
 async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
@@ -40,7 +47,7 @@ async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
         "max_tokens": 4000,
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-        resp = await client.post(_OPENAI_URL, json=payload, headers=headers)
+        resp = await client.post(_get_openai_url(), json=payload, headers=headers)
         resp.raise_for_status()
         data = resp.json()
         return data["choices"][0]["message"]["content"]

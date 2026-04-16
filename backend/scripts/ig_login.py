@@ -36,16 +36,21 @@ def challenge_code_handler(username, choice):
 def main():
     username = os.environ.get("INSTAGRAM_USERNAME", "")
     password = os.environ.get("INSTAGRAM_PASSWORD", "")
+    proxy = os.environ.get("INSTAGRAM_PROXY", "")
 
     if not username or not password:
         print("ERROR: INSTAGRAM_USERNAME / INSTAGRAM_PASSWORD env vars not set")
         sys.exit(1)
 
     print(f"Авторизация @{username} ...")
+    if proxy:
+        print(f"Прокси: {proxy}")
 
     cl = Client()
     cl.delay_range = [2, 5]
     cl.challenge_code_handler = challenge_code_handler
+    if proxy:
+        cl.set_proxy(proxy)
 
     # Try loading saved session first
     if SESSION_PATH.exists():

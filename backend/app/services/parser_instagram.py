@@ -52,6 +52,11 @@ def _get_or_create_client():
     cl = Client()
     cl.delay_range = [2, 5]
 
+    # Set proxy if configured
+    if settings.INSTAGRAM_PROXY:
+        cl.set_proxy(settings.INSTAGRAM_PROXY)
+        logger.info("instagrapi: using proxy")
+
     # Try loading saved session
     if _SESSION_PATH.exists():
         try:
