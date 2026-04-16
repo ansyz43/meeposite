@@ -27,6 +27,16 @@ _client_lock = asyncio.Lock()
 _SESSION_PATH = Path("/app/ig_session.json")
 
 
+class _ChallengeNeeded(RuntimeError):
+    """Raised when Instagram demands interactive verification."""
+
+
+def _reset_client():
+    """Clear cached client so the next call retries login."""
+    global _client
+    _client = None
+
+
 def _get_or_create_client():
     """Get or create instagrapi Client (sync). Thread-safe for executor."""
     global _client
@@ -34,6 +44,7 @@ def _get_or_create_client():
         return _client
 
     from instagrapi import Client
+    from instagrapi.exceptions import ChallengeRequired
 
     if not settings.INSTAGRAM_USERNAME or not settings.INSTAGRAM_PASSWORD:
         raise RuntimeError("INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD not configured")
@@ -49,11 +60,17 @@ def _get_or_create_client():
             logger.info("instagrapi: reused saved session")
             _client = cl
             return _client
+        except ChallengeRequired:
+            raise _ChallengeNeeded("challenge")
         except Exception as e:
             logger.warning("instagrapi: saved session invalid, re-logging: %s", e)
 
     # Fresh login
-    cl.login(settings.INSTAGRAM_USERNAME, settings.INSTAGRAM_PASSWORD)
+    try:
+        cl.login(settings.INSTAGRAM_USERNAME, settings.INSTAGRAM_PASSWORD)
+    except ChallengeRequired:
+        raise _ChallengeNeeded("challenge")
+
     cl.dump_settings(_SESSION_PATH)
     logger.info("instagrapi: fresh login, session saved")
     _client = cl
@@ -64,6 +81,8 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
     """Synchronous instagrapi fetch — runs in thread executor."""
     try:
         cl = _get_or_create_client()
+    except _ChallengeNeeded:
+        return {"error": "Instagram требует подтверждение. Запустите на сервере: docker compose exec -it backend python scripts/ig_login.py"}
     except RuntimeError as e:
         return {"error": str(e)}
 
@@ -71,6 +90,9 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
         user_id = cl.user_id_from_username(username)
     except Exception as e:
         err_str = str(e).lower()
+        if "challenge" in err_str:
+            _reset_client()
+            return {"error": "Instagram требует подтверждение. Запустите: docker compose exec -it backend python scripts/ig_login.py"}
         if "not found" in err_str or "not exist" in err_str:
             return {"error": f"Профиль @{username} не найден"}
         return {"error": f"Ошибка Instagram: {e}"}
@@ -78,6 +100,10 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
     try:
         medias = cl.user_medias(user_id, amount=max_posts)
     except Exception as e:
+        err_str = str(e).lower()
+        if "challenge" in err_str:
+            _reset_client()
+            return {"error": "Instagram требует подтверждение. Запустите: docker compose exec -it backend python scripts/ig_login.py"}
         return {"error": f"Не удалось загрузить посты: {e}"}
 
     posts = []
