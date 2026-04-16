@@ -23,7 +23,7 @@ from app.models import (
 logger = logging.getLogger(__name__)
 
 _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-_MODEL = "gpt-4.1-mini"
+_MODEL = "gpt-5.4"
 _TIMEOUT = 90
 
 
