@@ -42,10 +42,9 @@ class Settings(BaseSettings):
     MANAGER_BOT_TOKEN: str = ""
     MANAGER_BOT_USERNAME: str = "Fitline01bot"
 
-    # Content Plan — Telegram User API for channel parsing
-    TELEGRAM_API_ID: int = 0
-    TELEGRAM_API_HASH: str = ""
-    TELEGRAM_SESSION_NAME: str = "content_parser"
+    # Content Plan — Instagram parsing via aiograpi
+    INSTAGRAM_USERNAME: str = ""
+    INSTAGRAM_PASSWORD: str = ""
 
     model_config = {"env_file": ".env"}
 
