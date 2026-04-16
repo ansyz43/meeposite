@@ -175,6 +175,11 @@ export default function BotPage() {
           setShowTgGroup(true)
           await loadBots()
           await loadProfile()
+        } else if (data.status === 'failed') {
+          clearInterval(pollingRef.current)
+          setCreationPolling(false)
+          setCreationLink(null)
+          setError('Ошибка создания бота. Попробуйте ещё раз.')
         }
       } catch { /* ignore */ }
     }, 3000)

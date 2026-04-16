@@ -85,18 +85,43 @@ async def _handle_managed_bot_update(update: dict) -> None:
         bot_tg_id, bot_username, creator_tg_id,
     )
 
-    # 1. Get the token for the managed bot
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            _api_url("getManagedBotToken"),
-            json={"user_id": bot_tg_id},
-            timeout=15,
-        )
-        data = resp.json()
-        if not data.get("ok"):
-            logger.error("getManagedBotToken failed: %s", data)
-            return
-        token = data["result"]
+    # 1. Get the token for the managed bot (with retry)
+    token = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    _api_url("getManagedBotToken"),
+                    json={"user_id": bot_tg_id},
+                    timeout=15,
+                )
+                data = resp.json()
+                if data.get("ok"):
+                    token = data["result"]
+                    break
+                logger.error("getManagedBotToken failed (attempt %d): %s", attempt + 1, data)
+        except Exception as e:
+            logger.error("getManagedBotToken error (attempt %d): %s", attempt + 1, e)
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)  # 1s, 2s
+
+    if not token:
+        logger.error("getManagedBotToken exhausted retries for bot %s", bot_tg_id)
+        # Mark pending as failed so user can retry
+        async with async_session() as db:
+            if bot_username:
+                result = await db.execute(
+                    select(PendingBotCreation).where(
+                        PendingBotCreation.suggested_username == bot_username,
+                        PendingBotCreation.status == "pending",
+                    ).limit(1)
+                )
+                pending = result.scalar_one_or_none()
+                if pending:
+                    pending.status = "failed"
+                    pending.completed_at = datetime.utcnow()
+                    await db.commit()
+        return
 
     # 2. Find the platform user by matching on PendingBotCreation or telegram_id
     async with async_session() as db:
