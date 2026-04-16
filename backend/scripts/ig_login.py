@@ -17,7 +17,7 @@ from instagrapi import Client
 from instagrapi.exceptions import (
     ChallengeRequired,
     SelectContactPointRecoveryForm,
-    RecaptchaChallenge,
+    RecaptchaChallengeForm,
     FeedbackRequired,
     LoginRequired,
 )
