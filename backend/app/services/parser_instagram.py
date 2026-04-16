@@ -7,7 +7,7 @@ Global rate limit: max 30 parse ops / hour.
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
 
@@ -177,7 +177,7 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
 
 
 def _check_rate_limit() -> bool:
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     cutoff = now - timedelta(hours=1)
     _parse_timestamps[:] = [t for t in _parse_timestamps if t > cutoff]
     return len(_parse_timestamps) < _MAX_PARSES_PER_HOUR
@@ -198,7 +198,7 @@ async def parse_instagram_profile(
             select(sa_func.count(CompetitorPost.id)).where(
                 CompetitorPost.platform == "instagram",
                 CompetitorPost.channel_username == username,
-                CompetitorPost.parsed_at > datetime.now(timezone.utc) - timedelta(hours=_CACHE_TTL_HOURS),
+                CompetitorPost.parsed_at > datetime.utcnow() - timedelta(hours=_CACHE_TTL_HOURS),
             )
         )
         cached_count = cached.scalar() or 0
@@ -230,7 +230,7 @@ async def parse_instagram_profile(
         )
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     posts_saved = 0
     for p in posts_data:
         post = CompetitorPost(
