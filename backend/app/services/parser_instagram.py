@@ -109,8 +109,13 @@ def _fetch_medias_sync(username: str, max_posts: int) -> list[dict] | dict:
     except Exception:
         # Public GQL endpoint may be rate-limited (429); fallback to search
         try:
-            results = cl.search_users_v1(username, count=1)
-            match = next((u for u in results if u.username.lower() == username.lower()), None)
+            results = cl.search_users_v1(username, count=5)
+            norm = username.lower().replace(".", "").replace("_", "")
+            match = next(
+                (u for u in results
+                 if u.username.lower().replace(".", "").replace("_", "") == norm),
+                None,
+            )
             if match:
                 user_id = match.pk
             else:
