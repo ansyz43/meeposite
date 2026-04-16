@@ -5,6 +5,7 @@ import httpx
 from pathlib import Path
 from PIL import Image
 from io import BytesIO
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import select
@@ -229,14 +230,25 @@ async def create_bot(
     if existing_pending:
         link = f"https://t.me/newbot/{settings.MANAGER_BOT_USERNAME}/{existing_pending.suggested_username}"
         if existing_pending.suggested_name:
-            link += f"?name={existing_pending.suggested_name.replace(' ', '+')}"
+            link += f"?name={quote(existing_pending.suggested_name)}"
         return CreateBotResponse(
             link=link,
             suggested_username=existing_pending.suggested_username,
             pending_id=existing_pending.id,
         )
 
-    suggested_username = f"meepo_u{user.id}_bot"
+    # Count previous attempts to generate unique username
+    result = await db.execute(
+        select(PendingBotCreation).where(
+            PendingBotCreation.user_id == user.id,
+        )
+    )
+    attempt_count = len(result.scalars().all())
+    if attempt_count == 0:
+        suggested_username = f"meepo_u{user.id}_bot"
+    else:
+        suggested_username = f"meepo_u{user.id}_{attempt_count}_bot"
+
     suggested_name = data.name if data and data.name else f"Ассистент {user.name}"
 
     pending = PendingBotCreation(
@@ -250,7 +262,7 @@ async def create_bot(
 
     link = f"https://t.me/newbot/{settings.MANAGER_BOT_USERNAME}/{suggested_username}"
     if suggested_name:
-        link += f"?name={suggested_name.replace(' ', '+')}"
+        link += f"?name={quote(suggested_name)}"
 
     return CreateBotResponse(
         link=link,

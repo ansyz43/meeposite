@@ -124,29 +124,12 @@ export default function BotPage() {
 
   // ── Telegram actions ──
 
-  async function claimBot() {
-    setError('')
-    setClaiming(true)
-    try {
-      await api.post('/api/bot/claim')
-      setSuccess('Бот создан! Заполните настройки.')
-      setShowTgGroup(true)
-      await loadBots()
-      await loadProfile()
-    } catch (err) {
-      const d = err.response?.data?.detail
-      setError(typeof d === 'string' ? d : Array.isArray(d) ? d.map(e => e.msg).join('; ') : 'Ошибка создания бота')
-    }
-    setClaiming(false)
-  }
-
   async function createManagedBot() {
     setError('')
     setClaiming(true)
     try {
       const { data } = await api.post('/api/bot/create')
       setCreationLink(data.link)
-      window.open(data.link, '_blank')
       // Start polling for creation status
       setCreationPolling(true)
     } catch (err) {
@@ -359,21 +342,21 @@ export default function BotPage() {
             <EmptyState
               icon={Bot}
               title="Создайте бота в Telegram"
-              description="Откройте ссылку в Telegram и подтвердите создание бота. Страница обновится автоматически."
+              description="Нажмите кнопку ниже — откроется Telegram, подтвердите создание бота. Страница обновится автоматически."
               action={
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-4">
+                  {creationLink && (
+                    <a href={creationLink} target="_blank" rel="noopener noreferrer"
+                      className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3">
+                      <span className="relative z-10 flex items-center gap-2">
+                        <ExternalLink size={20} /> Открыть в Telegram
+                      </span>
+                    </a>
+                  )}
                   <div className="flex items-center gap-2 text-white/60">
                     <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm">Ожидание создания бота...</span>
                   </div>
-                  {creationLink && (
-                    <a href={creationLink} target="_blank" rel="noopener noreferrer"
-                      className="btn-primary inline-flex items-center gap-2 text-sm px-6 py-2">
-                      <span className="relative z-10 flex items-center gap-2">
-                        <ExternalLink size={16} /> Открыть ссылку снова
-                      </span>
-                    </a>
-                  )}
                 </div>
               }
             />
@@ -381,7 +364,7 @@ export default function BotPage() {
             <EmptyState
               icon={Bot}
               title="У вас пока нет Telegram-бота"
-              description="Нажмите кнопку — система создаст вам персонального Telegram-бота с ИИ"
+              description="Нажмите кнопку ниже — система автоматически назначит вам персонального Telegram-бота с ИИ"
               action={
                 <div className="flex flex-col items-center gap-3">
                   <button onClick={createManagedBot} disabled={claiming}
