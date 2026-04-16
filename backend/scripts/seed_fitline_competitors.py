@@ -75,14 +75,22 @@ async def main():
 
         # Run sync fetch in executor (same as the parser does)
         loop = asyncio.get_event_loop()
-        try:
-            result = await loop.run_in_executor(
-                None, _fetch_medias_sync, username, 15
-            )
-        except Exception as e:
-            logger.error(f"  EXECUTOR ERROR: {e}")
-            errors.append(username)
-            await asyncio.sleep(10)
+        result = None
+        for attempt in range(2):
+            try:
+                result = await loop.run_in_executor(
+                    None, _fetch_medias_sync, username, 15
+                )
+                break
+            except Exception as e:
+                logger.error(f"  EXECUTOR ERROR (attempt {attempt+1}): {e}")
+                if attempt == 0:
+                    await asyncio.sleep(15)
+                else:
+                    errors.append(username)
+                    await asyncio.sleep(10)
+
+        if result is None:
             continue
 
         if isinstance(result, dict) and "error" in result:
@@ -127,7 +135,7 @@ async def main():
             logger.info(f"  Saved {saved} new posts (total so far: {total_posts})")
 
         # Delay between accounts to avoid rate limits
-        delay = 8 if i % 5 == 0 else 4
+        delay = 20 if i % 5 == 0 else 12
         logger.info(f"  Waiting {delay}s...")
         await asyncio.sleep(delay)
 

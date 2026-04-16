@@ -56,7 +56,12 @@ async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
 
 
 async def _gather_competitor_data(profile: ContentProfile, db: AsyncSession) -> str:
-    """Collect cached competitor posts for the user's profile."""
+    """Collect cached competitor posts for the user's profile.
+
+    Priority:
+      1. User-specific competitors (CompetitorSource linked to profile)
+      2. Global FitLine reference database (top posts by engagement)
+    """
     sources = await db.execute(
         select(CompetitorSource).where(
             CompetitorSource.profile_id == profile.id,
@@ -65,10 +70,9 @@ async def _gather_competitor_data(profile: ContentProfile, db: AsyncSession) -> 
     )
     sources = sources.scalars().all()
 
-    if not sources:
-        return "Конкурентов не добавлено. Генерируй на основе ниши и ЦА."
-
     sections = []
+
+    # ── User-specific competitors ──
     for src in sources:
         posts = await db.execute(
             select(CompetitorPost)
@@ -98,7 +102,34 @@ async def _gather_competitor_data(profile: ContentProfile, db: AsyncSession) -> 
             + "\n".join(post_texts[:10])
         )
 
-    return "\n\n".join(sections) if sections else "Посты конкурентов ещё не загружены."
+    # ── Global FitLine reference (fallback or supplement) ──
+    if not sections:
+        ref_posts = await db.execute(
+            select(CompetitorPost)
+            .where(CompetitorPost.platform == "instagram")
+            .order_by(CompetitorPost.reactions.desc().nullslast())
+            .limit(25)
+        )
+        ref_posts = ref_posts.scalars().all()
+
+        if ref_posts:
+            ref_texts = []
+            for p in ref_posts:
+                meta = []
+                if p.reactions:
+                    meta.append(f"❤️ {p.reactions}")
+                meta_str = f" ({', '.join(meta)})" if meta else ""
+                ref_texts.append(f"- @{p.channel_username}: {p.text[:300]}{meta_str}")
+
+            sections.append(
+                "### РЕФЕРЕНС: Топ-посты успешных FitLine-продавцов (по вовлечению)\n"
+                + "\n".join(ref_texts)
+            )
+
+    if not sections:
+        return "Конкурентов не добавлено. Генерируй на основе ниши и ЦА."
+
+    return "\n\n".join(sections)
 
 
 async def generate_content_plan(
