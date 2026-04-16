@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "super-secret-key-change-in-production"
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""  # e.g. Cloudflare AI Gateway URL
+    CF_AIG_TOKEN: str = ""  # Cloudflare AI Gateway auth token
     CORS_ORIGINS: str = "http://localhost:3000"
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15

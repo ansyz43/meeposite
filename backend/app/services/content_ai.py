@@ -40,6 +40,8 @@ async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
         "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
         "Content-Type": "application/json",
     }
+    if settings.CF_AIG_TOKEN:
+        headers["cf-aig-authorization"] = f"Bearer {settings.CF_AIG_TOKEN}"
     payload = {
         "model": _MODEL,
         "messages": messages,
