@@ -54,57 +54,8 @@ async def claim_bot(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Assign a free bot from the pool to the current user."""
-    user = await _load_user_bots(user, db)
-    if _get_bot_by_platform(user, "telegram"):
-        raise HTTPException(status_code=400, detail="У вас уже есть Telegram-бот")
-
-    # Find an unassigned bot
-    result = await db.execute(
-        select(Bot).where(Bot.user_id.is_(None), Bot.platform == "telegram").order_by(Bot.id).limit(1)
-    )
-    free_bot = result.scalar_one_or_none()
-    if not free_bot:
-        raise HTTPException(status_code=409, detail="Нет свободных ботов. Обратитесь к администратору.")
-
-    free_bot.user_id = user.id
-    free_bot.assistant_name = f"Ассистент {user.name}"
-    free_bot.greeting_message = f"Привет! Я ассистент {user.name}. Чем могу помочь?"
-    free_bot.bot_description = f"{free_bot.assistant_name} — ваш персональный помощник по продукции FitLine"
-    free_bot.is_active = True
-
-    # Set bot info in Telegram API
-    try:
-        token = decrypt_token(free_bot.bot_token_encrypted)
-        base = _tg_api(token)
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(f"{base}/getMe", timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get("ok"):
-                    free_bot.bot_username = data["result"].get("username")
-            await client.post(
-                f"{base}/setMyName",
-                json={"name": free_bot.assistant_name},
-                timeout=10,
-            )
-            if free_bot.bot_description:
-                await client.post(
-                    f"{base}/setMyDescription",
-                    json={"description": free_bot.bot_description[:512]},
-                    timeout=10,
-                )
-                await client.post(
-                    f"{base}/setMyShortDescription",
-                    json={"short_description": free_bot.bot_description[:120]},
-                    timeout=10,
-                )
-    except Exception as e:
-        logger.warning(f"Failed to set bot info in Telegram: {e}")
-
-    await db.commit()
-    await db.refresh(free_bot)
-    return _bot_response(free_bot)
+    """Assign a free bot from the pool to the current user. DISABLED — use /create instead."""
+    raise HTTPException(status_code=410, detail="Используйте кнопку «Создать бота» для создания нового бота")
 
 
 @router.get("", response_model=BotResponse | None)
