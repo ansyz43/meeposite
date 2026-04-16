@@ -259,3 +259,55 @@ async def generate_content_plan(
     # Reload with items
     await db.refresh(plan)
     return plan
+
+
+async def analyze_profile_from_posts(posts_texts: list[str]) -> dict:
+    """Analyze user's own social media posts to auto-detect niche, audience, tone, topics.
+
+    Returns dict with keys: niche, target_audience, tone, topics (list).
+    """
+    if not posts_texts:
+        raise ValueError("Нет постов для анализа")
+
+    sample = "\n---\n".join(posts_texts[:20])
+
+    prompt = f"""Ты — маркетолог-аналитик. Проанализируй посты из социальной сети одного автора и определи его профиль.
+
+## Посты автора
+{sample}
+
+## Задача
+На основе анализа постов определи:
+1. **Ниша** — в какой нише работает автор (1-3 слова, например: "wellness и БАДы", "фитнес", "косметология")
+2. **Целевая аудитория** — кто читает эти посты: пол, примерный возраст, интересы, боли, мотивация (2-4 предложения)
+3. **Тон** — какой тон использует автор. Выбери ОДИН из: friendly, professional, expert, casual, motivational
+4. **Темы** — основные темы постов (3-8 тем через запятую)
+
+Ответь СТРОГО в формате JSON:
+{{
+  "niche": "...",
+  "target_audience": "...",
+  "tone": "friendly|professional|expert|casual|motivational",
+  "topics": ["тема1", "тема2", ...]
+}}"""
+
+    raw = await _call_gpt(
+        [{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+
+    text = raw.strip()
+    if "```" in text:
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
+
+    result = json.loads(text)
+
+    # Validate tone
+    valid_tones = {"friendly", "professional", "expert", "casual", "motivational"}
+    if result.get("tone") not in valid_tones:
+        result["tone"] = "friendly"
+
+    return result

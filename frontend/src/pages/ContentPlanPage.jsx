@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Plus, Trash2, RefreshCw, Sparkles, Calendar, Clock, Hash, ChevronDown, ChevronUp, Send, Instagram, Loader2, AlertCircle, Check, Eye, Heart } from 'lucide-react'
+import { FileText, Plus, Trash2, RefreshCw, Sparkles, Calendar, Clock, Hash, ChevronDown, ChevronUp, Send, Instagram, Loader2, AlertCircle, Check, Eye, Heart, Wand2 } from 'lucide-react'
 import api from '../api'
 
 const PLATFORMS = [
@@ -110,6 +110,39 @@ function ProfileTab({ profile, onUpdate }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Auto-detect
+  const [detectPlatform, setDetectPlatform] = useState('telegram')
+  const [detectUsername, setDetectUsername] = useState('')
+  const [detecting, setDetecting] = useState(false)
+  const [detectError, setDetectError] = useState('')
+  const [detectSuccess, setDetectSuccess] = useState(false)
+
+  const handleAutoDetect = async () => {
+    if (!detectUsername.trim()) return
+    setDetecting(true)
+    setDetectError('')
+    setDetectSuccess(false)
+    try {
+      const { data } = await api.post('/api/content/profile/auto-detect', {
+        platform: detectPlatform,
+        username: detectUsername.trim(),
+      })
+      setForm(f => ({
+        ...f,
+        niche: data.niche || f.niche,
+        target_audience: data.target_audience || f.target_audience,
+        tone: data.tone || f.tone,
+        topics: Array.isArray(data.topics) ? data.topics.join(', ') : f.topics,
+      }))
+      setDetectSuccess(true)
+      setTimeout(() => setDetectSuccess(false), 3000)
+    } catch (e) {
+      setDetectError(e.response?.data?.detail || 'Ошибка анализа')
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -137,6 +170,50 @@ function ProfileTab({ profile, onUpdate }) {
   }
 
   return (
+    <div className="space-y-5">
+      {/* Auto-detect block */}
+      <div className="glass-card p-5 border border-emerald-500/20">
+        <div className="flex items-center gap-2 mb-3">
+          <Wand2 size={18} className="text-emerald-400" />
+          <h3 className="text-sm font-semibold text-white">Заполнить автоматически</h3>
+        </div>
+        <p className="text-xs text-white/40 mb-3">
+          Укажите ваш Telegram-канал или Instagram — система проанализирует посты и заполнит профиль
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-1 bg-white/[0.04] rounded-lg p-0.5">
+            {PLATFORMS.map(p => (
+              <button key={p.value} onClick={() => setDetectPlatform(p.value)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs transition-all ${
+                  detectPlatform === p.value
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'text-white/40 hover:text-white/60'
+                }`}>
+                <p.icon size={14} /> {p.label}
+              </button>
+            ))}
+          </div>
+          <input
+            value={detectUsername}
+            onChange={e => setDetectUsername(e.target.value)}
+            placeholder={detectPlatform === 'telegram' ? '@username канала' : '@username в Instagram'}
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none"
+          />
+          <button
+            onClick={handleAutoDetect}
+            disabled={detecting || !detectUsername.trim()}
+            className="btn-primary flex items-center gap-2 text-sm px-4 py-2 disabled:opacity-50 whitespace-nowrap"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              {detecting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {detecting ? 'Анализ...' : 'Определить'}
+            </span>
+          </button>
+        </div>
+        {detectError && <p className="text-red-400 text-xs mt-2">{detectError}</p>}
+        {detectSuccess && <p className="text-emerald-400 text-xs mt-2">Профиль заполнен! Проверьте и сохраните.</p>}
+      </div>
+
     <div className="glass-card p-6 space-y-5">
       <h2 className="text-lg font-semibold text-white">Профиль для контента</h2>
 
@@ -218,6 +295,7 @@ function ProfileTab({ profile, onUpdate }) {
         {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : null}
         {saved ? 'Сохранено!' : 'Сохранить профиль'}
       </button>
+    </div>
     </div>
   )
 }

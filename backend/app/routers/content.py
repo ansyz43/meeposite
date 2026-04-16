@@ -451,6 +451,74 @@ async def delete_plan(
     return {"ok": True}
 
 
+# ── Auto-detect profile ──────────────────────────────────────
+
+@router.post("/profile/auto-detect")
+async def auto_detect_profile(
+    data: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Parse user's own social media and auto-detect niche, audience, tone, topics."""
+    platform = data.get("platform", "").lower()
+    username = data.get("username", "").strip().lstrip("@").lower()
+
+    if not username:
+        raise HTTPException(400, "Укажите username аккаунта")
+    if platform not in ("telegram", "instagram"):
+        raise HTTPException(400, "Поддерживается только Telegram и Instagram")
+
+    # Parse posts using existing parsers
+    try:
+        if platform == "telegram":
+            from app.services.parser_telegram import parse_telegram_channel
+            result = await parse_telegram_channel(username, db, force=True, max_posts=30)
+        else:
+            from app.services.parser_instagram import parse_instagram_profile
+            result = await parse_instagram_profile(username, db, force=True)
+
+        if result.get("status") == "error":
+            raise HTTPException(400, result.get("error", "Ошибка парсинга"))
+        if result.get("status") == "rate_limited":
+            raise HTTPException(429, "Слишком много запросов, попробуйте через минуту")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Auto-detect parse failed: %s", e, exc_info=True)
+        raise HTTPException(400, f"Не удалось загрузить посты: {e}")
+
+    # Fetch parsed posts from DB
+    posts_result = await db.execute(
+        select(CompetitorPost.text)
+        .where(
+            CompetitorPost.platform == platform,
+            CompetitorPost.channel_username == username,
+        )
+        .order_by(CompetitorPost.posted_at.desc())
+        .limit(20)
+    )
+    posts_texts = [row[0] for row in posts_result.all() if row[0]]
+
+    if not posts_texts:
+        raise HTTPException(400, "Не найдено постов для анализа")
+
+    # AI analysis
+    from app.services.content_ai import analyze_profile_from_posts
+
+    try:
+        profile_data = await analyze_profile_from_posts(posts_texts)
+    except Exception as e:
+        logger.error("Auto-detect AI failed: %s", e, exc_info=True)
+        raise HTTPException(500, "Ошибка AI-анализа, попробуйте ещё раз")
+
+    return {
+        "niche": profile_data.get("niche", ""),
+        "target_audience": profile_data.get("target_audience", ""),
+        "tone": profile_data.get("tone", "friendly"),
+        "topics": profile_data.get("topics", []),
+    }
+
+
 # ── Background tasks ─────────────────────────────────────────
 
 async def _parse_competitor_bg(platform: str, username: str, force: bool = False):
