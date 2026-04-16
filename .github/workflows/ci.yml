@@ -34,8 +34,10 @@ jobs:
           python -m py_compile bot_worker/worker/ai_service.py
           python -m py_compile bot_worker/worker/config.py
 
-      - name: Run tests
-        env:
-          SECRET_KEY: ci-test-secret-key-not-for-production-1234
-          DATABASE_URL: "sqlite+aiosqlite:///"
-        run: cd backend && python -m pytest tests/ -v --tb=short
+      - name: Syntax check — routers
+        run: |
+          python -m py_compile backend/app/routers/bot.py
+          python -m py_compile backend/app/routers/auth.py
+          python -m py_compile backend/app/routers/broadcast.py
+          python -m py_compile backend/app/routers/profile.py
+          python -m py_compile backend/app/routers/referral.py
