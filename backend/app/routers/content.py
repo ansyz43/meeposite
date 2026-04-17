@@ -2,9 +2,11 @@
 
 Isolated from all existing routers. No shared state.
 """
+import io
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func as sa_func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -342,6 +344,7 @@ async def get_plan(
                 "text": item.text,
                 "hashtags": item.hashtags,
                 "best_time": item.best_time,
+                "script": item.script,
                 "is_edited": item.is_edited,
             }
             for item in plan.items
@@ -392,6 +395,7 @@ async def generate_plan(
                 "text": item.text,
                 "hashtags": item.hashtags,
                 "best_time": item.best_time,
+                "script": item.script,
                 "is_edited": item.is_edited,
             }
             for item in plan.items
@@ -427,6 +431,8 @@ async def update_plan_item(
         item.hashtags = data.hashtags
     if data.topic is not None:
         item.topic = data.topic
+    if data.script is not None:
+        item.script = data.script
     item.is_edited = True
 
     await db.commit()
@@ -449,6 +455,222 @@ async def delete_plan(
     await db.delete(plan)
     await db.commit()
     return {"ok": True}
+
+
+# ── Export ────────────────────────────────────────────────────
+
+async def _load_plan_for_export(plan_id: int, user: User, db: AsyncSession) -> ContentPlan:
+    result = await db.execute(
+        select(ContentPlan)
+        .options(selectinload(ContentPlan.items))
+        .where(ContentPlan.id == plan_id, ContentPlan.user_id == user.id)
+    )
+    plan = result.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(404, "План не найден")
+    if plan.status != "ready":
+        raise HTTPException(400, "План ещё не готов")
+    return plan
+
+
+@router.get("/plans/{plan_id}/export/pdf")
+async def export_plan_pdf(
+    plan_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    plan = await _load_plan_for_export(plan_id, user, db)
+
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import os
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
+
+    # Try to register a font that supports Cyrillic
+    font_name = "Helvetica"
+    font_name_bold = "Helvetica-Bold"
+    for font_path in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    ]:
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont("CyrFont", font_path))
+            bold_path = font_path.replace("Sans.ttf", "Sans-Bold.ttf").replace("arial.ttf", "arialbd.ttf")
+            if os.path.exists(bold_path):
+                pdfmetrics.registerFont(TTFont("CyrFontBold", bold_path))
+                font_name_bold = "CyrFontBold"
+            font_name = "CyrFont"
+            break
+
+    # Styles
+    accent = HexColor("#10b981")
+    dark = HexColor("#1a1a2e")
+    gray = HexColor("#6b7280")
+
+    s_title = ParagraphStyle("Title", fontName=font_name_bold, fontSize=18, textColor=dark, alignment=TA_CENTER, spaceAfter=4*mm)
+    s_sub = ParagraphStyle("Sub", fontName=font_name, fontSize=10, textColor=gray, alignment=TA_CENTER, spaceAfter=8*mm)
+    s_day = ParagraphStyle("Day", fontName=font_name_bold, fontSize=12, textColor=accent, spaceBefore=6*mm, spaceAfter=2*mm)
+    s_label = ParagraphStyle("Label", fontName=font_name_bold, fontSize=9, textColor=gray, spaceBefore=2*mm, spaceAfter=1*mm)
+    s_body = ParagraphStyle("Body", fontName=font_name, fontSize=10, textColor=dark, leading=14, spaceAfter=2*mm)
+    s_meta = ParagraphStyle("Meta", fontName=font_name, fontSize=8, textColor=gray, spaceAfter=1*mm)
+    s_script = ParagraphStyle("Script", fontName=font_name, fontSize=10, textColor=HexColor("#7c3aed"), leading=14, leftIndent=6*mm, spaceAfter=2*mm)
+    s_hash = ParagraphStyle("Hash", fontName=font_name, fontSize=8, textColor=accent, spaceAfter=4*mm)
+
+    story = []
+    story.append(Paragraph(plan.title.replace("&", "&amp;"), s_title))
+    platform_label = "Instagram" if plan.platform == "instagram" else "Telegram"
+    story.append(Paragraph(f"{platform_label} · {plan.period_days} дней · {plan.created_at.strftime('%d.%m.%Y')}", s_sub))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e5e7eb"), spaceAfter=4*mm))
+
+    type_emoji = {"пост": "📝", "сторис": "📱", "рилс": "🎬", "карусель": "🖼"}
+
+    for item in plan.items:
+        emoji = type_emoji.get(item.post_type, "📌")
+        story.append(Paragraph(f"День {item.day_number} — {emoji} {item.post_type.upper()}", s_day))
+        if item.best_time:
+            story.append(Paragraph(f"⏰ Лучшее время: {item.best_time}", s_meta))
+        story.append(Paragraph(f"Тема: {item.topic.replace('&', '&amp;')}", s_label))
+        # Escape XML special chars for reportlab
+        text_safe = item.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
+        story.append(Paragraph(text_safe, s_body))
+
+        if item.script:
+            story.append(Paragraph("🎤 Скрипт для озвучки:", s_label))
+            script_safe = item.script.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
+            story.append(Paragraph(script_safe, s_script))
+
+        if item.hashtags:
+            story.append(Paragraph(item.hashtags.replace("&", "&amp;"), s_hash))
+
+        story.append(HRFlowable(width="100%", thickness=0.3, color=HexColor("#e5e7eb"), spaceAfter=2*mm))
+
+    doc.build(story)
+    buf.seek(0)
+
+    filename = f"content_plan_{plan.id}.pdf"
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/plans/{plan_id}/export/docx")
+async def export_plan_docx(
+    plan_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    plan = await _load_plan_for_export(plan_id, user, db)
+
+    from docx import Document
+    from docx.shared import Pt, Inches, Cm, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+
+    document = Document()
+
+    # Narrow margins
+    for section in document.sections:
+        section.left_margin = Cm(2)
+        section.right_margin = Cm(2)
+        section.top_margin = Cm(2)
+        section.bottom_margin = Cm(2)
+
+    # Title
+    title_p = document.add_heading(plan.title, level=1)
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for run in title_p.runs:
+        run.font.color.rgb = RGBColor(0x10, 0xB9, 0x81)
+
+    # Subtitle
+    platform_label = "Instagram" if plan.platform == "instagram" else "Telegram"
+    sub = document.add_paragraph()
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = sub.add_run(f"{platform_label} · {plan.period_days} дней · {plan.created_at.strftime('%d.%m.%Y')}")
+    run.font.size = Pt(10)
+    run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+    document.add_paragraph()  # spacer
+
+    type_emoji = {"пост": "📝", "сторис": "📱", "рилс": "🎬", "карусель": "🖼"}
+
+    for item in plan.items:
+        emoji = type_emoji.get(item.post_type, "📌")
+
+        # Day heading
+        h = document.add_heading(f"День {item.day_number} — {emoji} {item.post_type.upper()}", level=2)
+        for run in h.runs:
+            run.font.color.rgb = RGBColor(0x10, 0xB9, 0x81)
+            run.font.size = Pt(13)
+
+        # Meta
+        if item.best_time:
+            meta_p = document.add_paragraph()
+            run = meta_p.add_run(f"⏰ Лучшее время: {item.best_time}")
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+        # Topic
+        topic_p = document.add_paragraph()
+        run = topic_p.add_run("Тема: ")
+        run.font.bold = True
+        run.font.size = Pt(10)
+        run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+        run = topic_p.add_run(item.topic)
+        run.font.size = Pt(10)
+
+        # Post text
+        text_p = document.add_paragraph()
+        run = text_p.add_run(item.text)
+        run.font.size = Pt(10)
+        text_p.paragraph_format.space_after = Pt(4)
+
+        # Script
+        if item.script:
+            script_label = document.add_paragraph()
+            run = script_label.add_run("🎤 Скрипт для озвучки:")
+            run.font.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = RGBColor(0x7C, 0x3A, 0xED)
+
+            script_p = document.add_paragraph()
+            script_p.paragraph_format.left_indent = Cm(1)
+            run = script_p.add_run(item.script)
+            run.font.size = Pt(10)
+            run.font.color.rgb = RGBColor(0x7C, 0x3A, 0xED)
+            run.font.italic = True
+            script_p.paragraph_format.space_after = Pt(4)
+
+        # Hashtags
+        if item.hashtags:
+            hash_p = document.add_paragraph()
+            run = hash_p.add_run(item.hashtags)
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor(0x10, 0xB9, 0x81)
+
+        # Separator
+        document.add_paragraph("─" * 60).runs[0].font.color.rgb = RGBColor(0xE5, 0xE7, 0xEB)
+
+    buf = io.BytesIO()
+    document.save(buf)
+    buf.seek(0)
+
+    filename = f"content_plan_{plan.id}.docx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── Auto-detect profile ──────────────────────────────────────

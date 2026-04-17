@@ -408,6 +408,7 @@ class ContentPlanItemResponse(BaseModel):
     text: str
     hashtags: str | None
     best_time: str | None
+    script: str | None = None
     is_edited: bool
 
 
@@ -415,6 +416,7 @@ class ContentPlanItemUpdate(BaseModel):
     text: str | None = Field(default=None, max_length=4000)
     hashtags: str | None = Field(default=None, max_length=1000)
     topic: str | None = Field(default=None, max_length=255)
+    script: str | None = Field(default=None, max_length=5000)
 
 
 class ContentPlanResponse(BaseModel):

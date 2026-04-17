@@ -265,6 +265,7 @@ class ContentPlanItem(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     hashtags: Mapped[str | None] = mapped_column(Text)
     best_time: Mapped[str | None] = mapped_column(String(20))  # "09:00"
+    script: Mapped[str | None] = mapped_column(Text)  # voiceover script for рилс/сторис
     is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 

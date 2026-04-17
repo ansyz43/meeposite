@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Plus, Trash2, RefreshCw, Sparkles, Calendar, Clock, Hash, ChevronDown, ChevronUp, Send, Instagram, Loader2, AlertCircle, Check, Eye, Heart, Wand2 } from 'lucide-react'
+import { FileText, Plus, Trash2, RefreshCw, Sparkles, Calendar, Clock, Hash, ChevronDown, ChevronUp, Send, Instagram, Loader2, AlertCircle, Check, Eye, Heart, Wand2, Download, Mic, Copy, FileDown } from 'lucide-react'
 import api from '../api'
 
 const PLATFORMS = [
@@ -606,7 +606,7 @@ function PlansTab({ plans, onUpdate }) {
               </div>
 
               {selectedPlan === plan.id && planDetail && (
-                <PlanDetail plan={planDetail} loading={loadingDetail} />
+                <PlanDetail plan={planDetail} loading={loadingDetail} onUpdate={setPlanDetail} />
               )}
             </div>
           ))}
@@ -619,10 +619,12 @@ function PlansTab({ plans, onUpdate }) {
 
 // ── Plan Detail ──────────────────────────────────────────────
 
-function PlanDetail({ plan, loading }) {
+function PlanDetail({ plan, loading, onUpdate }) {
   const [editingId, setEditingId] = useState(null)
+  const [editField, setEditField] = useState('text') // 'text' | 'script'
   const [editText, setEditText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [copied, setCopied] = useState(null)
 
   if (loading) {
     return <div className="py-4 text-center"><Loader2 className="w-5 h-5 text-emerald-400 animate-spin mx-auto" /></div>
@@ -639,13 +641,39 @@ function PlanDetail({ plan, loading }) {
   const handleSave = async (itemId) => {
     setSaving(true)
     try {
-      await api.put(`/api/content/plans/${plan.id}/items/${itemId}`, { text: editText })
-      plan.items = plan.items.map(i => i.id === itemId ? { ...i, text: editText, is_edited: true } : i)
+      const payload = editField === 'script' ? { script: editText } : { text: editText }
+      await api.put(`/api/content/plans/${plan.id}/items/${itemId}`, payload)
+      if (onUpdate) {
+        const updated = { ...plan, items: plan.items.map(i => i.id === itemId ? { ...i, [editField]: editText, is_edited: true } : i) }
+        onUpdate(updated)
+      }
       setEditingId(null)
     } catch {
       alert('Ошибка сохранения')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleCopy = (text, id) => {
+    navigator.clipboard.writeText(text)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 1500)
+  }
+
+  const handleExport = async (format) => {
+    try {
+      const res = await api.get(`/api/content/plans/${plan.id}/export/${format}`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `content_plan_${plan.id}.${format === 'docx' ? 'docx' : 'pdf'}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      alert('Ошибка экспорта')
     }
   }
 
@@ -658,7 +686,22 @@ function PlanDetail({ plan, loading }) {
 
   return (
     <div className="mt-1 space-y-1.5">
-      {plan.items?.map(item => (
+      {/* Export buttons */}
+      <div className="flex gap-2 justify-end px-1 pb-1">
+        <button onClick={() => handleExport('pdf')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors">
+          <FileDown size={13} /> PDF
+        </button>
+        <button onClick={() => handleExport('docx')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors">
+          <Download size={13} /> DOCX
+        </button>
+      </div>
+
+      {plan.items?.map(item => {
+        const isVideo = item.post_type === 'рилс' || item.post_type === 'сторис'
+        const isEditingText = editingId === item.id && editField === 'text'
+        const isEditingScript = editingId === item.id && editField === 'script'
+
+        return (
         <div key={item.id} className="glass-card p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -675,7 +718,7 @@ function PlanDetail({ plan, loading }) {
 
           <div className="text-xs font-medium text-white/70 mb-1.5">{item.topic}</div>
 
-          {editingId === item.id ? (
+          {isEditingText ? (
             <div className="space-y-2">
               <textarea
                 value={editText}
@@ -692,11 +735,54 @@ function PlanDetail({ plan, loading }) {
             </div>
           ) : (
             <div
-              onClick={() => { setEditingId(item.id); setEditText(item.text) }}
+              onClick={() => { setEditingId(item.id); setEditField('text'); setEditText(item.text) }}
               className="text-xs text-white/50 leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-white/[0.02] rounded p-1 -m-1 transition-colors"
               title="Нажмите для редактирования"
             >
               {item.text}
+            </div>
+          )}
+
+          {/* Voiceover script for рилс/сторис */}
+          {isVideo && item.script && (
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-medium text-purple-400">
+                  <Mic size={11} /> Скрипт для озвучки
+                </div>
+                <button
+                  onClick={() => handleCopy(item.script, `script-${item.id}`)}
+                  className="flex items-center gap-1 text-[10px] text-white/25 hover:text-white/50 transition-colors"
+                  title="Копировать скрипт"
+                >
+                  {copied === `script-${item.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                  {copied === `script-${item.id}` ? 'Скопировано' : 'Копировать'}
+                </button>
+              </div>
+              {isEditingScript ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    rows={5}
+                    className="w-full bg-purple-500/[0.06] border border-purple-500/30 rounded-lg px-3 py-2 text-purple-200 text-xs focus:outline-none resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleSave(item.id)} disabled={saving} className="px-3 py-1.5 rounded-lg text-xs bg-purple-500/15 text-purple-400 hover:bg-purple-500/25 border border-purple-500/30">
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : 'Сохранить'}
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="text-xs text-white/30 hover:text-white/60">Отмена</button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => { setEditingId(item.id); setEditField('script'); setEditText(item.script) }}
+                  className="text-xs text-purple-300/50 leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-purple-500/[0.04] rounded p-1.5 -mx-1 transition-colors italic"
+                  title="Нажмите для редактирования скрипта"
+                >
+                  {item.script}
+                </div>
+              )}
             </div>
           )}
 
@@ -706,7 +792,8 @@ function PlanDetail({ plan, loading }) {
             </div>
           )}
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
