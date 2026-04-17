@@ -359,6 +359,13 @@ CTA: ссылка на бота в Telegram
 
         posts_list = json.loads(posts_text)
 
+        # Log first item to verify script generation
+        if posts_list:
+            first = posts_list[0]
+            logger.info("First item sample: type=%s, has_script=%s, script_len=%s",
+                        first.get("type"), "script" in first,
+                        len(first.get("script", "")) if first.get("script") else 0)
+
         # Create items
         for item_data in posts_list:
             post_type = item_data.get("type", "пост")
