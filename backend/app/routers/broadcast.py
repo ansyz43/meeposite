@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 import os
 import time
@@ -52,6 +53,10 @@ async def create_broadcast(
     total = count_result.scalar() or 0
     if total == 0:
         raise HTTPException(status_code=400, detail="У бота нет контактов для рассылки")
+
+    # Defense-in-depth: escape any HTML in user-provided text to prevent injection
+    # via Telegram's parse_mode=HTML (e.g. crafted <a href=...> for phishing).
+    message_text = html.escape(message_text, quote=False)
 
     # Handle image upload
     image_url = None

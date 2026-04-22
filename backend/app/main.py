@@ -34,17 +34,20 @@ limiter = Limiter(key_func=get_remote_address)
 import asyncio
 
 from app.services.manager_bot import run_manager_bot_polling
+from app.services.watchdog import run_plan_watchdog
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(run_manager_bot_polling())
+    watchdog_task = asyncio.create_task(run_plan_watchdog())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    for t in (task, watchdog_task):
+        t.cancel()
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="Meepo API", version="1.0.0", lifespan=lifespan)

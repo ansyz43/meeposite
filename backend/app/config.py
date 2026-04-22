@@ -14,6 +14,9 @@ _INSECURE_DEFAULTS = {
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://meepo:changeme@localhost:5432/meepo"
     SECRET_KEY: str = "super-secret-key-change-in-production"
+    # Optional — separate key for Fernet token encryption. If empty, falls back to SECRET_KEY
+    # (backward-compatible). Set a distinct value for new deployments.
+    ENCRYPTION_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""  # e.g. Cloudflare AI Gateway URL
     CF_AIG_TOKEN: str = ""  # Cloudflare AI Gateway auth token
@@ -49,6 +52,7 @@ class Settings(BaseSettings):
     INSTAGRAM_PASSWORD: str = ""
     INSTAGRAM_SESSION_ID: str = ""  # browser cookie sessionid — preferred over password login
     INSTAGRAM_PROXY: str = ""  # e.g. http://user:pass@host:port or socks5://user:pass@host:port
+    INSTAGRAM_PARSER_ENABLED: bool = False  # Disabled by default until Graph API migration.
 
     model_config = {"env_file": ".env"}
 

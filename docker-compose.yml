@@ -26,6 +26,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://meepo:${DB_PASSWORD:?Set DB_PASSWORD in .env}@db:5432/meepo
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       CF_AIG_TOKEN: ${CF_AIG_TOKEN:-}
@@ -69,6 +70,7 @@ services:
       PROXY_SECRET: ${PROXY_SECRET:-}
       TELEGRAM_API_URL: ${TELEGRAM_API_URL:-}
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       ALERT_CHAT_ID: ${ALERT_CHAT_ID:-}
       ALERT_BOT_TOKEN: ${ALERT_BOT_TOKEN:-}
       SENTRY_DSN: ${SENTRY_DSN:-}

@@ -3,10 +3,13 @@
 Isolated from all existing routers. No shared state.
 """
 import io
+import datetime
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select, func as sa_func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -36,6 +39,10 @@ from app.schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/content", tags=["content"])
+limiter = Limiter(key_func=get_remote_address)
+
+# Daily quota for plan generation per user (UTC day).
+PLANS_DAILY_QUOTA = 10
 
 
 # ── Profile ──────────────────────────────────────────────────
@@ -385,7 +392,9 @@ async def get_plan(
 
 
 @router.post("/plans/generate", response_model=ContentPlanResponse, status_code=202)
+@limiter.limit("3/minute")
 async def generate_plan(
+    request: Request,
     data: GeneratePlanRequest,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
@@ -403,6 +412,19 @@ async def generate_plan(
     )
     if not profile_res.scalar_one_or_none():
         raise HTTPException(400, "Сначала заполните профиль контент-маркетинга")
+
+    # Daily quota — count plans created by this user in the last 24h.
+    since = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    quota_res = await db.execute(
+        select(sa_func.count(ContentPlan.id))
+        .where(ContentPlan.user_id == user.id, ContentPlan.created_at >= since)
+    )
+    used = quota_res.scalar() or 0
+    if used >= PLANS_DAILY_QUOTA:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Дневной лимит контент-планов ({PLANS_DAILY_QUOTA}) исчерпан. Попробуйте завтра.",
+        )
 
     platform_name = "Instagram" if data.platform == "instagram" else "Telegram"
     plan = ContentPlan(
@@ -712,6 +734,13 @@ async def auto_detect_profile(
     platform = data.get("platform", "").lower()
     username = data.get("username", "").strip().lstrip("@").lower()
 
+    from app.config import settings
+    if platform == "instagram" and not settings.INSTAGRAM_PARSER_ENABLED:
+        raise HTTPException(
+            503,
+            "Интеграция с Instagram временно недоступна. Используйте ручное заполнение профиля или Telegram.",
+        )
+
     # Extract username from Instagram URL if full link was pasted
     if platform == "instagram":
         from app.services.parser_instagram import _extract_username
@@ -778,6 +807,11 @@ async def auto_detect_profile(
 async def _parse_competitor_bg(platform: str, username: str, force: bool = False):
     """Background task: parse a competitor channel/profile."""
     from app.database import async_session
+    from app.config import settings
+
+    if platform == "instagram" and not settings.INSTAGRAM_PARSER_ENABLED:
+        logger.info("Skipping IG parse for @%s — parser disabled by feature flag", username)
+        return
 
     async with async_session() as db:
         try:
