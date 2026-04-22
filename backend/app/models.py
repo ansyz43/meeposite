@@ -198,6 +198,18 @@ class ContentProfile(Base):
     tone: Mapped[str] = mapped_column(String(100), nullable=False, default="friendly")
     target_audience: Mapped[str] = mapped_column(Text, nullable=False, default="")
     topics: Mapped[str] = mapped_column(Text, nullable=False, default="")  # comma-separated
+
+    # Narrative core — used for unique storytelling, generated once per profile and cached
+    founder_story: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transformation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signature_metaphors: Mapped[str | None] = mapped_column(Text, nullable=True)
+    value_ladder_position: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    meepo_bot_deeplink: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Cached strategy (pain map, themes, formats) — regenerated on demand or TTL
+    strategy_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    strategy_generated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, onupdate=func.now())
 
@@ -250,7 +262,7 @@ class ContentPlan(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship("User")
-    items: Mapped[list["ContentPlanItem"]] = relationship("ContentPlanItem", back_populates="plan", cascade="all, delete-orphan", order_by="ContentPlanItem.day_number")
+    items: Mapped[list["ContentPlanItem"]] = relationship("ContentPlanItem", back_populates="plan", cascade="all, delete-orphan", order_by="(ContentPlanItem.day_number, ContentPlanItem.id)")
 
 
 class ContentPlanItem(Base):
@@ -266,6 +278,8 @@ class ContentPlanItem(Base):
     hashtags: Mapped[str | None] = mapped_column(Text)
     best_time: Mapped[str | None] = mapped_column(String(20))  # "09:00"
     script: Mapped[str | None] = mapped_column(Text)  # voiceover script for рилс/сторис
+    hunt_stage: Mapped[str | None] = mapped_column(String(20), nullable=True)  # unaware|problem|solution|product|most_aware
+    is_meepo_cta: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 

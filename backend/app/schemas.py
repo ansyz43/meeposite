@@ -330,6 +330,10 @@ class ContentProfileRequest(BaseModel):
     tone: str = Field(default="friendly", max_length=100)
     target_audience: str = Field(default="", max_length=2000)
     topics: list[str] = Field(default=[])
+    # Narrative core (all optional — can be filled by the user or auto-generated on first plan)
+    founder_story: str | None = Field(default=None, max_length=4000)
+    transformation: str | None = Field(default=None, max_length=4000)
+    meepo_bot_deeplink: str | None = Field(default=None, max_length=500)
 
     @field_validator("platforms")
     @classmethod
@@ -348,6 +352,9 @@ class ContentProfileResponse(BaseModel):
     tone: str
     target_audience: str
     topics: list[str]
+    founder_story: str | None = None
+    transformation: str | None = None
+    meepo_bot_deeplink: str | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime | None
     competitors: list["CompetitorSourceResponse"] = []
@@ -409,6 +416,8 @@ class ContentPlanItemResponse(BaseModel):
     hashtags: str | None
     best_time: str | None
     script: str | None = None
+    hunt_stage: str | None = None
+    is_meepo_cta: bool = False
     is_edited: bool
 
 

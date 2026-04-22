@@ -80,6 +80,9 @@ async def get_profile(
         tone=profile.tone,
         target_audience=profile.target_audience,
         topics=profile.topics.split(",") if profile.topics else [],
+        founder_story=profile.founder_story,
+        transformation=profile.transformation,
+        meepo_bot_deeplink=profile.meepo_bot_deeplink,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
         competitors=competitors,
@@ -100,12 +103,33 @@ async def upsert_profile(
     platforms_str = ",".join(data.platforms)
     topics_str = ",".join(data.topics)
 
+    # Detect changes that should invalidate the cached narrative core.
+    core_inputs_changed = False
+
     if profile:
+        if (
+            profile.niche != data.niche
+            or profile.tone != data.tone
+            or (profile.target_audience or "") != (data.target_audience or "")
+            or (profile.topics or "") != topics_str
+            or (profile.founder_story or "") != (data.founder_story or "")
+            or (profile.transformation or "") != (data.transformation or "")
+        ):
+            core_inputs_changed = True
+
         profile.niche = data.niche
         profile.platforms = platforms_str
         profile.tone = data.tone
         profile.target_audience = data.target_audience
         profile.topics = topics_str
+        profile.founder_story = data.founder_story or None
+        profile.transformation = data.transformation or None
+        profile.meepo_bot_deeplink = data.meepo_bot_deeplink or None
+
+        if core_inputs_changed:
+            # Drop cached strategy — it will regenerate on the next plan.
+            profile.strategy_json = None
+            profile.strategy_generated_at = None
     else:
         profile = ContentProfile(
             user_id=user.id,
@@ -114,6 +138,9 @@ async def upsert_profile(
             tone=data.tone,
             target_audience=data.target_audience,
             topics=topics_str,
+            founder_story=data.founder_story or None,
+            transformation=data.transformation or None,
+            meepo_bot_deeplink=data.meepo_bot_deeplink or None,
         )
         db.add(profile)
 
@@ -127,6 +154,9 @@ async def upsert_profile(
         tone=profile.tone,
         target_audience=profile.target_audience,
         topics=data.topics,
+        founder_story=profile.founder_story,
+        transformation=profile.transformation,
+        meepo_bot_deeplink=profile.meepo_bot_deeplink,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
         competitors=[],
@@ -345,6 +375,8 @@ async def get_plan(
                 "hashtags": item.hashtags,
                 "best_time": item.best_time,
                 "script": item.script,
+                "hunt_stage": item.hunt_stage,
+                "is_meepo_cta": item.is_meepo_cta,
                 "is_edited": item.is_edited,
             }
             for item in plan.items
@@ -396,6 +428,8 @@ async def generate_plan(
                 "hashtags": item.hashtags,
                 "best_time": item.best_time,
                 "script": item.script,
+                "hunt_stage": item.hunt_stage,
+                "is_meepo_cta": item.is_meepo_cta,
                 "is_edited": item.is_edited,
             }
             for item in plan.items
