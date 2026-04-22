@@ -301,6 +301,132 @@ def _build_batch_posts_prompt(
 Сгенерируй ровно столько элементов, сколько строк в скелете. Не пропускай, не добавляй."""
 
 
+def _strip_markdown_fence(text: str) -> str:
+    """Remove leading/trailing ```json fences if present."""
+    text = text.strip()
+    if text.startswith("```"):
+        # drop leading fence line
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.lstrip().lower().startswith("json"):
+            text = text.lstrip()[4:]
+    if text.rstrip().endswith("```"):
+        text = text.rstrip()[:-3]
+    return text.strip()
+
+
+def _parse_posts_json_robust(raw: str) -> list[dict]:
+    """Parse a JSON array of post dicts.
+
+    Falls back to extracting top-level objects one-by-one when the response is
+    truncated (unterminated string, missing closing bracket, etc.).
+    """
+    text = _strip_markdown_fence(raw)
+    try:
+        data = json.loads(text)
+        if isinstance(data, list):
+            return [x for x in data if isinstance(x, dict)]
+        if isinstance(data, dict):
+            return [data]
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: scan for top-level {...} objects with balanced braces,
+    # ignoring braces inside strings.
+    objects: list[dict] = []
+    depth = 0
+    in_str = False
+    escape = False
+    start = -1
+    for i, ch in enumerate(text):
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+            continue
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start >= 0:
+                candidate = text[start : i + 1]
+                try:
+                    obj = json.loads(candidate)
+                    if isinstance(obj, dict):
+                        objects.append(obj)
+                except json.JSONDecodeError:
+                    pass
+                start = -1
+    logger.warning(
+        "Robust JSON fallback recovered %d/%d objects from truncated response",
+        len(objects),
+        text.count('"day"'),
+    )
+    return objects
+
+
+async def _generate_posts_batched(
+    *,
+    profile: ContentProfile,
+    platform_name: str,
+    narrative_text: str,
+    strategy: dict,
+    slots: list[Slot],
+    competitor_data: str,
+    meepo_link: str | None,
+    chunk_size: int = 10,
+) -> list[dict]:
+    """Generate posts in parallel chunks so each response stays under token limits."""
+    chunks = [slots[i : i + chunk_size] for i in range(0, len(slots), chunk_size)]
+
+    async def _one_chunk(chunk: list[Slot]) -> list[dict]:
+        prompt = _build_batch_posts_prompt(
+            profile=profile,
+            platform_name=platform_name,
+            narrative_text=narrative_text,
+            strategy=strategy,
+            skeleton_table=skeleton_to_prompt_table(chunk),
+            competitor_data=competitor_data,
+            meepo_link=meepo_link,
+        )
+        try:
+            raw = await _call_gpt(
+                [{"role": "user", "content": prompt}],
+                temperature=0.8,
+                model=_MODEL_POSTS,
+            )
+        except Exception as e:
+            logger.error("GPT call failed for chunk (%d slots): %s", len(chunk), e)
+            return []
+
+        items = _parse_posts_json_robust(raw)
+        if not items:
+            logger.error(
+                "Chunk returned no parseable items. Raw head: %s",
+                raw[:400].replace("\n", " "),
+            )
+        return items
+
+    results = await asyncio.gather(*(_one_chunk(c) for c in chunks), return_exceptions=False)
+    merged: list[dict] = []
+    for r in results:
+        merged.extend(r)
+    logger.info(
+        "Batched posts: %d chunks, %d items collected (expected ~%d)",
+        len(chunks),
+        len(merged),
+        len(slots),
+    )
+    return merged
+
+
 async def generate_content_plan(
     user_id: int,
     platform: str,
@@ -406,36 +532,20 @@ async def _fill_plan(
         # ── Step 3: Competitor data (cheap context, optional) ──
         competitor_data = await _gather_competitor_data(profile, db)
 
-        # ── Step 4: One batch GPT call (cheap model) ───────
-        posts_prompt = _build_batch_posts_prompt(
+        # ── Step 4: Parallel batched GPT calls (cheap model) ───
+        # Split the skeleton into chunks so each GPT response stays well
+        # below max_completion_tokens (~8k) and never gets truncated.
+        # 10 slots/chunk → ~4-5k output tokens at worst.
+        posts_list = await _generate_posts_batched(
             profile=profile,
             platform_name=platform_name,
             narrative_text=narrative_text,
             strategy=strategy,
-            skeleton_table=skeleton_table,
+            slots=slots,
             competitor_data=competitor_data,
             meepo_link=meepo_link,
+            chunk_size=10,
         )
-
-        posts_raw = await _call_gpt(
-            [{"role": "user", "content": posts_prompt}],
-            temperature=0.8,
-            model=_MODEL_POSTS,
-        )
-
-        # Parse posts JSON (strip markdown fence if present)
-        posts_text = posts_raw.strip()
-        if "```" in posts_text:
-            posts_text = posts_text.split("```")[1]
-            if posts_text.startswith("json"):
-                posts_text = posts_text[4:]
-            posts_text = posts_text.strip()
-
-        try:
-            posts_list = json.loads(posts_text)
-        except json.JSONDecodeError:
-            logger.error("Failed to parse posts JSON. Raw head: %s", posts_text[:400])
-            raise
 
         # Index GPT output by (day, type) so we can align it with the authoritative skeleton.
         by_key: dict[tuple[int, str], dict] = {}
