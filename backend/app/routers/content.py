@@ -384,31 +384,39 @@ async def get_plan(
     )
 
 
-@router.post("/plans/generate", response_model=ContentPlanResponse)
+@router.post("/plans/generate", response_model=ContentPlanResponse, status_code=202)
 async def generate_plan(
     data: GeneratePlanRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.services.content_ai import generate_content_plan
+    """Create a plan row with status='generating' and run generation in background.
 
-    try:
-        plan = await generate_content_plan(
-            user_id=user.id,
-            platform=data.platform,
-            period_days=data.period_days,
-            db=db,
-        )
-    except ValueError as e:
-        raise HTTPException(400, str(e))
+    The frontend should poll GET /plans/{id} until status becomes 'ready' or 'error'.
+    """
+    from app.services.content_ai import fill_plan_background
 
-    # Reload with items
-    result = await db.execute(
-        select(ContentPlan)
-        .options(selectinload(ContentPlan.items))
-        .where(ContentPlan.id == plan.id)
+    # Make sure the user has a profile (fail fast before creating a placeholder plan).
+    profile_res = await db.execute(
+        select(ContentProfile).where(ContentProfile.user_id == user.id)
     )
-    plan = result.scalar_one()
+    if not profile_res.scalar_one_or_none():
+        raise HTTPException(400, "Сначала заполните профиль контент-маркетинга")
+
+    platform_name = "Instagram" if data.platform == "instagram" else "Telegram"
+    plan = ContentPlan(
+        user_id=user.id,
+        title=f"Контент-план {platform_name} на {data.period_days} дней",
+        platform=data.platform,
+        period_days=data.period_days,
+        status="generating",
+    )
+    db.add(plan)
+    await db.commit()
+    await db.refresh(plan)
+
+    background_tasks.add_task(fill_plan_background, plan.id)
 
     return ContentPlanResponse(
         id=plan.id,
@@ -418,22 +426,7 @@ async def generate_plan(
         status=plan.status,
         error_message=plan.error_message,
         created_at=plan.created_at,
-        items=[
-            {
-                "id": item.id,
-                "day_number": item.day_number,
-                "post_type": item.post_type,
-                "topic": item.topic,
-                "text": item.text,
-                "hashtags": item.hashtags,
-                "best_time": item.best_time,
-                "script": item.script,
-                "hunt_stage": item.hunt_stage,
-                "is_meepo_cta": item.is_meepo_cta,
-                "is_edited": item.is_edited,
-            }
-            for item in plan.items
-        ],
+        items=[],
     )
 
 

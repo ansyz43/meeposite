@@ -285,7 +285,7 @@ async def generate_content_plan(
     period_days: int,
     db: AsyncSession,
 ) -> ContentPlan:
-    """Generate a content plan using cached narrative core + deterministic skeleton + 1 batch GPT call.
+    """Generate a content plan synchronously (kept for backward compat/tests).
 
     Returns created ContentPlan with items. Status = 'ready' or 'error'.
     """
@@ -310,6 +310,47 @@ async def generate_content_plan(
     db.add(plan)
     await db.flush()
 
+    await _fill_plan(plan, profile, platform_name, db)
+    await db.refresh(plan)
+    return plan
+
+
+async def fill_plan_background(plan_id: int) -> None:
+    """Background-task entry point. Opens its own DB session and fills an existing plan row."""
+    from app.database import async_session  # local import to avoid cycles at module load
+
+    async with async_session() as db:
+        result = await db.execute(
+            select(ContentPlan).where(ContentPlan.id == plan_id)
+        )
+        plan = result.scalar_one_or_none()
+        if not plan:
+            logger.error("fill_plan_background: plan #%d not found", plan_id)
+            return
+
+        profile_res = await db.execute(
+            select(ContentProfile).where(ContentProfile.user_id == plan.user_id)
+        )
+        profile = profile_res.scalar_one_or_none()
+        if not profile:
+            plan.status = "error"
+            plan.error_message = "Профиль контент-маркетинга не найден"
+            await db.commit()
+            return
+
+        platform_name = "Instagram" if plan.platform == "instagram" else "Telegram"
+        await _fill_plan(plan, profile, platform_name, db)
+
+
+async def _fill_plan(
+    plan: ContentPlan,
+    profile: ContentProfile,
+    platform_name: str,
+    db: AsyncSession,
+) -> None:
+    """Execute steps 1-5 for an already-created plan row and commit the result."""
+    platform = plan.platform
+    period_days = plan.period_days
     try:
         # ── Step 1: Narrative core (cached per profile) ────
         core = await ensure_narrative_core(profile, db)
@@ -424,10 +465,6 @@ async def generate_content_plan(
         plan.status = "error"
         plan.error_message = (str(e) or e.__class__.__name__)[:500]
         await db.commit()
-
-    # Reload with items
-    await db.refresh(plan)
-    return plan
 
 
 async def analyze_profile_from_posts(posts_texts: list[str]) -> dict:

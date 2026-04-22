@@ -478,11 +478,35 @@ function PlansTab({ plans, onUpdate }) {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
+      // Kick off generation — backend returns 202 with plan in status='generating'.
       const res = await api.post('/api/content/plans/generate', genForm)
+      const planId = res.data.id
       setPlanDetail(res.data)
-      setSelectedPlan(res.data.id)
+      setSelectedPlan(planId)
       setShowGen(false)
       onUpdate()
+
+      // Poll until generation completes (ready/error). Max ~5 minutes.
+      const started = Date.now()
+      while (Date.now() - started < 5 * 60 * 1000) {
+        await new Promise(r => setTimeout(r, 3000))
+        let poll
+        try {
+          poll = await api.get(`/api/content/plans/${planId}`)
+        } catch (err) {
+          continue // transient network error — keep trying
+        }
+        setPlanDetail(poll.data)
+        if (poll.data.status === 'ready') {
+          onUpdate()
+          break
+        }
+        if (poll.data.status === 'error') {
+          alert(poll.data.error_message || 'Ошибка генерации')
+          onUpdate()
+          break
+        }
+      }
     } catch (e) {
       alert(e.response?.data?.detail || 'Ошибка генерации')
     } finally {
