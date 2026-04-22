@@ -5,6 +5,7 @@ Step 2: Generate posts based on strategy
 """
 import json
 import logging
+import asyncio
 from datetime import datetime, timezone
 
 import httpx
@@ -24,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _MODEL = "gpt-5.4"
-_TIMEOUT = 120
+_TIMEOUT = 180
+_MAX_GPT_RETRIES = 3
 
 
 def _get_openai_url() -> str:
@@ -34,7 +36,11 @@ def _get_openai_url() -> str:
     return _DEFAULT_OPENAI_URL
 
 
-async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
+async def _call_gpt(
+    messages: list[dict],
+    temperature: float = 0.7,
+    max_completion_tokens: int = 8000,
+) -> str:
     """Call OpenAI API and return content string."""
     headers = {
         "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
@@ -46,13 +52,48 @@ async def _call_gpt(messages: list[dict], temperature: float = 0.7) -> str:
         "model": _MODEL,
         "messages": messages,
         "temperature": temperature,
-        "max_completion_tokens": 8000,
+        "max_completion_tokens": max_completion_tokens,
     }
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-        resp = await client.post(_get_openai_url(), json=payload, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+
+    last_exc = None
+    for attempt in range(1, _MAX_GPT_RETRIES + 1):
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                resp = await client.post(_get_openai_url(), json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except (httpx.ReadTimeout, httpx.ReadError) as e:
+            last_exc = e
+            if attempt >= _MAX_GPT_RETRIES:
+                break
+            delay = float(attempt)
+            logger.warning(
+                "GPT request timeout/read error (attempt %d/%d), retry in %.1fs",
+                attempt,
+                _MAX_GPT_RETRIES,
+                delay,
+            )
+            await asyncio.sleep(delay)
+        except httpx.HTTPStatusError as e:
+            status = e.response.status_code if e.response else None
+            retriable = status in (429, 500, 502, 503, 504)
+            if retriable and attempt < _MAX_GPT_RETRIES:
+                delay = float(attempt)
+                logger.warning(
+                    "GPT HTTP %s (attempt %d/%d), retry in %.1fs",
+                    status,
+                    attempt,
+                    _MAX_GPT_RETRIES,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            raise
+
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("GPT call failed")
 
 
 async def _gather_competitor_data(profile: ContentProfile, db: AsyncSession) -> str:
@@ -388,7 +429,7 @@ CTA: ссылка на бота в Telegram
     except Exception as e:
         logger.error("Content plan generation failed: %s", e, exc_info=True)
         plan.status = "error"
-        plan.error_message = str(e)[:500]
+        plan.error_message = (str(e) or e.__class__.__name__)[:500]
         await db.commit()
 
     # Reload with items
