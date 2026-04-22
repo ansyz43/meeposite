@@ -397,7 +397,7 @@ class CompetitorPostResponse(BaseModel):
 
 class GeneratePlanRequest(BaseModel):
     platform: str = Field(max_length=20)
-    period_days: int = Field(default=7, ge=7, le=30)
+    period_days: int = Field(default=7, ge=7, le=14)
 
     @field_validator("platform")
     @classmethod

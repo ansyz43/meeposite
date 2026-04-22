@@ -574,7 +574,7 @@ function PlansTab({ plans, onUpdate }) {
           </div>
           <div className="flex gap-2 items-center">
             <span className="text-sm text-white/50">Период:</span>
-            {[7, 14, 30].map(d => (
+            {[7, 14].map(d => (
               <button
                 key={d}
                 onClick={() => setGenForm(f => ({ ...f, period_days: d }))}
