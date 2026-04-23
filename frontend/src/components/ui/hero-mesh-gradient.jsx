@@ -20,6 +20,7 @@ export function HeroMeshGradient({ className = "", fixed = false }) {
       style={{ opacity: isLight ? 0.85 : 0.45 }}
     >
       <MeshGradient
+        key={isLight ? 'light' : 'dark'}
         colors={colors}
         speed={0.12}
         distortion={0.5}
