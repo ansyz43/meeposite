@@ -51,10 +51,10 @@ export default function PartnerPage() {
           <div className="text-xs text-white/40 mb-2">Ваша реферальная ссылка — отправьте её друзьям для регистрации</div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <Link size={16} className="text-emerald-400 shrink-0" />
+              <Link size={16} className="text-sky-400 shrink-0" />
               <span className="text-white/70 text-sm truncate">{user.ref_link}</span>
             </div>
-            <button onClick={copyRefLink} className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 shrink-0 ml-3 transition-colors">
+            <button onClick={copyRefLink} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 shrink-0 ml-3 transition-colors">
               {copied ? <Check size={16} /> : <Copy size={16} />}
               {copied ? 'Скопировано' : 'Скопировать'}
             </button>
@@ -79,7 +79,7 @@ export default function PartnerPage() {
         <div className="glass-card overflow-hidden mb-6">
           <div className="p-5 border-b border-white/[0.06]">
             <h2 className="font-display font-semibold flex items-center gap-2">
-              <Users size={18} className="text-emerald-400" />
+              <Users size={18} className="text-sky-400" />
               Прямые рефералы ({referrals.length})
             </h2>
           </div>

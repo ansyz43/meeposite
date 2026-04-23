@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,7 +12,7 @@
     --card-foreground: 0 0% 95%;
     --popover: 220 18% 7%;
     --popover-foreground: 0 0% 95%;
-    --primary: 160 84% 39%;
+    --primary: 210 90% 52%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 12%;
     --secondary-foreground: 0 0% 95%;
@@ -20,25 +22,78 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 14%;
     --input: 220 13% 14%;
-    --ring: 160 84% 39%;
+    --ring: 210 90% 52%;
     --radius: 0.75rem;
-    --accent: 160 84% 39%;
+    --accent: 210 90% 52%;
 
-    /* Rainbow button — emerald palette */
-    --color-1: #059669;
-    --color-2: #10B981;
-    --color-3: #14B8A6;
-    --color-4: #34D399;
-    --color-5: #06B6D4;
+    /* Rainbow button — blue/cyan palette */
+    --color-1: #1d4ed8;
+    --color-2: #2563eb;
+    --color-3: #0284c7;
+    --color-4: #0ea5e9;
+    --color-5: #38bdf8;
+  }
+
+  .light {
+    --background: 210 45% 98%;
+    --foreground: 215 44% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 44% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 44% 16%;
+    --primary: 210 90% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 44% 16%;
+    --muted: 210 35% 95%;
+    --muted-foreground: 215 16% 40%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 35% 88%;
+    --input: 210 35% 88%;
+    --ring: 210 90% 52%;
+    --accent: 210 90% 52%;
+
+    /* Rainbow button — blue palette */
+    --color-1: #1d4ed8;
+    --color-2: #2563eb;
+    --color-3: #0284c7;
+    --color-4: #0ea5e9;
+    --color-5: #38bdf8;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'Fira Sans', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  a,
+  button,
+  [role='button'],
+  .btn-primary,
+  .btn-secondary {
+    cursor: pointer;
+  }
+
+  :where(a, button, input, select, textarea, [role='button']):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   * {
     @apply border-border;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -50,8 +105,8 @@
     transition-all duration-300 hover:scale-[1.03] active:scale-100
     overflow-hidden;
     background:
-      linear-gradient(#0C1219, #0C1219),
-      linear-gradient(#0C1219 50%, rgba(12,18,25,0.6) 80%, rgba(12,18,25,0)),
+      linear-gradient(hsl(var(--card)), hsl(var(--card))),
+      linear-gradient(hsl(var(--card)) 50%, rgba(30, 41, 59, 0.35) 80%, rgba(30, 41, 59, 0)),
       linear-gradient(90deg, var(--color-1), var(--color-2), var(--color-3), var(--color-4), var(--color-5));
     background-size: 200%;
     background-clip: padding-box, border-box, border-box;
@@ -76,8 +131,16 @@
 
   /* Ghost outline button */
   .btn-secondary {
-    @apply border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-emerald-500/30 
+    @apply border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-sky-500/30 
     text-white/80 hover:text-white font-medium py-3 px-8 rounded-xl transition-all duration-300;
+  }
+
+  .light .btn-primary {
+    @apply text-slate-900;
+  }
+
+  .light .btn-secondary {
+    @apply border-blue-200 bg-blue-50/70 hover:bg-blue-100/70 hover:border-blue-300 text-slate-700 hover:text-slate-900;
   }
 
   /* Glass card with animated border */
@@ -86,10 +149,18 @@
     border border-white/[0.06] rounded-2xl overflow-hidden
     transition-all duration-500;
   }
+
+  .light .glass-card {
+    @apply bg-white/90 border-blue-100 shadow-[0_10px_40px_rgba(37,99,235,0.08)];
+  }
+
+  .light .glass-card:hover {
+    @apply border-blue-200;
+  }
   .glass-card::before {
     content: '';
     @apply absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 pointer-events-none;
-    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(16, 185, 129, 0.06), transparent 40%);
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(14, 165, 233, 0.08), transparent 40%);
   }
   .glass-card:hover::before {
     @apply opacity-100;
@@ -101,15 +172,23 @@
   /* Premium input */
   .input-field {
     @apply w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3.5 text-white 
-    placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 
+    placeholder-white/30 focus:outline-none focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 
     focus:bg-white/[0.05] transition-all duration-300;
+  }
+
+  .light .input-field {
+    @apply bg-white border-blue-200 text-slate-800 placeholder-slate-400 focus:border-blue-400 focus:ring-blue-300/40 focus:bg-white;
   }
 
   /* Animated gradient text */
   .gradient-text {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400;
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-sky-400;
     background-size: 200% auto;
     animation: gradient-shift 3s linear infinite;
+  }
+
+  .light .gradient-text {
+    @apply bg-gradient-to-r from-blue-700 via-sky-500 to-blue-700;
   }
 
   /* Stat card with top accent border */
@@ -120,14 +199,14 @@
   .stat-card::after {
     content: '';
     @apply absolute top-0 left-0 right-0 h-[2px];
-    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.5), transparent);
   }
 
   /* Mesh gradient background */
   .mesh-gradient {
     background: 
-      radial-gradient(ellipse at 20% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(20, 184, 166, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 50%, rgba(37, 99, 235, 0.10) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
       radial-gradient(ellipse at 40% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
   }
 
@@ -141,7 +220,7 @@
   /* Section heading block */
   .section-badge {
     @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full 
-    bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 
+    bg-sky-500/10 border border-sky-500/20 text-sky-400 
     text-xs font-mono uppercase tracking-wider mb-4;
   }
 
@@ -165,7 +244,7 @@
     @apply relative w-11 h-6 bg-white/10 rounded-full cursor-pointer transition-colors duration-300;
   }
   .toggle-switch.active {
-    @apply bg-emerald-500;
+    @apply bg-blue-500;
   }
   .toggle-switch::after {
     content: '';
@@ -173,6 +252,112 @@
   }
   .toggle-switch.active::after {
     @apply translate-x-5;
+  }
+
+  .light .section-badge {
+    @apply bg-blue-100 border-blue-200 text-blue-700;
+  }
+
+  /* Compatibility bridge for legacy hardcoded dark classes.
+     Lets light theme stay readable before we migrate every page to semantic tokens. */
+  .light [class*="text-white"] {
+    color: rgb(15 23 42 / var(--tw-text-opacity, 1)) !important;
+  }
+
+  .light [class*="bg-white/"] {
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1)) !important;
+  }
+
+  .light [class*="border-white/"] {
+    border-color: rgb(203 213 225 / var(--tw-border-opacity, 1)) !important;
+  }
+
+  .light [class*="text-sky"] {
+    color: rgb(37 99 235 / var(--tw-text-opacity, 1)) !important;
+  }
+
+  .light [class*="bg-sky"] {
+    background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1)) !important;
+  }
+
+  .light [class*="border-sky"] {
+    border-color: rgb(147 197 253 / var(--tw-border-opacity, 1)) !important;
+  }
+
+  .light [class*="from-blue"],
+  .light [class*="to-blue"],
+  .light [class*="from-cyan"],
+  .light [class*="to-cyan"] {
+    --tw-gradient-from: rgb(37 99 235 / 0.2) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(14 165 233 / 0.12) var(--tw-gradient-to-position) !important;
+  }
+
+  /* Page-level polish for true light-mode look and contrast */
+  .light .landing-page .noise::after {
+    opacity: 0.01;
+  }
+
+  .light .landing-page [class*="bg-white/[0.02]"],
+  .light .landing-page [class*="bg-white/[0.03]"],
+  .light .landing-page [class*="bg-white/[0.04]"],
+  .light .landing-page [class*="bg-white/[0.05]"] {
+    background-color: rgb(255 255 255 / 0.92) !important;
+  }
+
+  .light .landing-page [class*="text-white/30"] {
+    color: rgb(100 116 139 / 1) !important;
+  }
+
+  .light .landing-page [class*="text-white/40"],
+  .light .landing-page [class*="text-white/50"] {
+    color: rgb(71 85 105 / 1) !important;
+  }
+
+  .light .landing-page [class*="text-white/60"],
+  .light .landing-page [class*="text-white/70"],
+  .light .landing-page [class*="text-white/80"] {
+    color: rgb(30 41 59 / 1) !important;
+  }
+
+  .light .landing-page [class*="border-white/"] {
+    border-color: rgb(203 213 225 / 0.8) !important;
+  }
+
+  .light .dashboard-page [class*="text-white/30"] {
+    color: rgb(100 116 139 / 1) !important;
+  }
+
+  .light .dashboard-page [class*="text-white/40"],
+  .light .dashboard-page [class*="text-white/50"] {
+    color: rgb(71 85 105 / 1) !important;
+  }
+
+  .light .dashboard-page [class*="text-white/60"],
+  .light .dashboard-page [class*="text-white/70"],
+  .light .dashboard-page [class*="text-white/80"] {
+    color: rgb(30 41 59 / 1) !important;
+  }
+
+  .light .content-plan-page [class*="text-white/20"],
+  .light .content-plan-page [class*="text-white/25"],
+  .light .content-plan-page [class*="text-white/30"] {
+    color: rgb(100 116 139 / 1) !important;
+  }
+
+  .light .content-plan-page [class*="text-white/40"],
+  .light .content-plan-page [class*="text-white/50"] {
+    color: rgb(71 85 105 / 1) !important;
+  }
+
+  .light .content-plan-page [class*="text-white/60"],
+  .light .content-plan-page [class*="text-white/70"],
+  .light .content-plan-page [class*="text-white/80"] {
+    color: rgb(30 41 59 / 1) !important;
+  }
+
+  .light .content-plan-page [class*="bg-white/[0.04]"],
+  .light .content-plan-page [class*="bg-white/[0.05]"] {
+    background-color: rgb(255 255 255 / 0.95) !important;
   }
 }
 

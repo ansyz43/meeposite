@@ -59,7 +59,7 @@ export default function Profile() {
         <form onSubmit={saveName}>
           <div className="p-6 border-b border-white/[0.06]">
             <h2 className="font-display font-semibold flex items-center gap-2 mb-5">
-              <User size={18} className="text-emerald-400" />
+              <User size={18} className="text-sky-400" />
               Личные данные
             </h2>
             <div className="space-y-4">
@@ -92,7 +92,7 @@ export default function Profile() {
         <form onSubmit={changePassword}>
           <div className="p-6 border-b border-white/[0.06]">
             <h2 className="font-display font-semibold flex items-center gap-2 mb-5">
-              <Lock size={18} className="text-emerald-400" />
+              <Lock size={18} className="text-sky-400" />
               Смена пароля
             </h2>
             <div className="space-y-4">

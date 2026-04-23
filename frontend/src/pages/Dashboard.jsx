@@ -44,7 +44,7 @@ export default function Dashboard() {
   const setupTotal = setupSteps.length
 
   return (
-    <div>
+    <div className="dashboard-page">
       <PageHeader title="Панель управления" />
 
       {/* Stats */}
@@ -77,7 +77,7 @@ export default function Dashboard() {
           {/* Quick actions — bento grid */}
           <div className="lg:col-span-2 glass-card p-6">
             <h2 className="font-display font-semibold mb-5 flex items-center gap-2">
-              <Sparkles size={16} className="text-emerald-400" />
+              <Sparkles size={16} className="text-sky-400" />
               Быстрые действия
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -89,9 +89,9 @@ export default function Dashboard() {
               ].map(item => (
                 <Link key={item.to} to={item.to}
                   className="flex items-center gap-4 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02]
-                  hover:border-emerald-500/20 hover:bg-emerald-500/[0.04] transition-all duration-300 group">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-shadow shrink-0">
-                    <item.icon size={18} className="text-emerald-400" />
+                  hover:border-sky-500/20 hover:bg-sky-500/[0.04] transition-all duration-300 group">
+                  <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-shadow shrink-0">
+                    <item.icon size={18} className="text-sky-400" />
                   </div>
                   <div>
                     <div className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">{item.label}</div>
@@ -105,17 +105,17 @@ export default function Dashboard() {
           {/* Setup progress */}
           <div className="glass-card p-6">
             <h2 className="font-display font-semibold mb-5 flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-400" />
+              <CheckCircle2 size={16} className="text-sky-400" />
               Настройка
             </h2>
             <div className="mb-4">
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="text-white/40">{setupDone} из {setupTotal}</span>
-                <span className="text-emerald-400 font-mono text-xs">{Math.round(setupDone / setupTotal * 100)}%</span>
+                <span className="text-sky-400 font-mono text-xs">{Math.round(setupDone / setupTotal * 100)}%</span>
               </div>
               <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-700"
                   style={{ width: `${(setupDone / setupTotal) * 100}%` }}
                 />
               </div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
               {setupSteps.map((step, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                    step.done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/[0.06] text-white/20'
+                    step.done ? 'bg-sky-500/20 text-sky-400' : 'bg-white/[0.06] text-white/20'
                   }`}>
                     {step.done ? <CheckCircle2 size={14} /> : <div className="w-2 h-2 rounded-full bg-white/20" />}
                   </div>
@@ -133,7 +133,7 @@ export default function Dashboard() {
               ))}
             </div>
             {setupDone < setupTotal && (
-              <Link to="/dashboard/bot" className="mt-5 text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+              <Link to="/dashboard/bot" className="mt-5 text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors">
                 Завершить настройку <ArrowRight size={14} />
               </Link>
             )}

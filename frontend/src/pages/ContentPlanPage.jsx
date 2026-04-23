@@ -44,7 +44,7 @@ export default function ContentPlanPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+        <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
       </div>
     )
   }
@@ -56,7 +56,7 @@ export default function ContentPlanPage() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="content-plan-page max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-white">Контент-план</h1>
         <p className="text-white/40 text-sm mt-1">AI-генерация контента на основе анализа конкурентов</p>
@@ -77,7 +77,7 @@ export default function ContentPlanPage() {
             disabled={t.disabled}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
-                ? 'bg-emerald-500/15 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                ? 'bg-sky-500/15 text-sky-400 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.24)]'
                 : t.disabled
                   ? 'text-white/20 cursor-not-allowed'
                   : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]'
@@ -172,9 +172,9 @@ function ProfileTab({ profile, onUpdate }) {
   return (
     <div className="space-y-5">
       {/* Auto-detect block */}
-      <div className="glass-card p-5 border border-emerald-500/20">
+      <div className="glass-card p-5 border border-sky-500/20">
         <div className="flex items-center gap-2 mb-3">
-          <Wand2 size={18} className="text-emerald-400" />
+          <Wand2 size={18} className="text-sky-400" />
           <h3 className="text-sm font-semibold text-white">Заполнить автоматически</h3>
         </div>
         <p className="text-xs text-white/40 mb-3">
@@ -186,7 +186,7 @@ function ProfileTab({ profile, onUpdate }) {
               <button key={p.value} onClick={() => setDetectPlatform(p.value)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs transition-all ${
                   detectPlatform === p.value
-                    ? 'bg-emerald-500/15 text-emerald-400'
+                    ? 'bg-sky-500/15 text-sky-400'
                     : 'text-white/40 hover:text-white/60'
                 }`}>
                 <p.icon size={14} /> {p.label}
@@ -197,7 +197,7 @@ function ProfileTab({ profile, onUpdate }) {
             value={detectUsername}
             onChange={e => setDetectUsername(e.target.value)}
             placeholder={detectPlatform === 'telegram' ? '@username канала' : '@username в Instagram'}
-            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none"
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:border-sky-500/40 focus:outline-none"
           />
           <button
             onClick={handleAutoDetect}
@@ -211,7 +211,7 @@ function ProfileTab({ profile, onUpdate }) {
           </button>
         </div>
         {detectError && <p className="text-red-400 text-xs mt-2">{detectError}</p>}
-        {detectSuccess && <p className="text-emerald-400 text-xs mt-2">Профиль заполнен! Проверьте и сохраните.</p>}
+        {detectSuccess && <p className="text-sky-400 text-xs mt-2">Профиль заполнен! Проверьте и сохраните.</p>}
       </div>
 
     <div className="glass-card p-6 space-y-5">
@@ -223,7 +223,7 @@ function ProfileTab({ profile, onUpdate }) {
           value={form.niche}
           onChange={e => setForm(f => ({ ...f, niche: e.target.value }))}
           placeholder="Например: wellness, фитнес, красота"
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none"
+          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-sky-500/40 focus:outline-none"
         />
       </div>
 
@@ -236,7 +236,7 @@ function ProfileTab({ profile, onUpdate }) {
               onClick={() => togglePlatform(p.value)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
                 form.platforms.includes(p.value)
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                   : 'bg-white/[0.04] text-white/40 border border-white/[0.08] hover:border-white/20'
               }`}
             >
@@ -256,7 +256,7 @@ function ProfileTab({ profile, onUpdate }) {
               onClick={() => setForm(f => ({ ...f, tone: t.value }))}
               className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
                 form.tone === t.value
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                   : 'bg-white/[0.04] text-white/40 border border-white/[0.08] hover:border-white/20'
               }`}
             >
@@ -273,7 +273,7 @@ function ProfileTab({ profile, onUpdate }) {
           onChange={e => setForm(f => ({ ...f, target_audience: e.target.value }))}
           placeholder="Опишите вашу ЦА: возраст, интересы, боли..."
           rows={3}
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none resize-none"
+          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-sky-500/40 focus:outline-none resize-none"
         />
       </div>
 
@@ -283,7 +283,7 @@ function ProfileTab({ profile, onUpdate }) {
           value={form.topics}
           onChange={e => setForm(f => ({ ...f, topics: e.target.value }))}
           placeholder="здоровье, БАДы, спорт, питание"
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none"
+          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:border-sky-500/40 focus:outline-none"
         />
       </div>
 
@@ -382,7 +382,7 @@ function CompetitorsTab({ profile, onUpdate }) {
                 onClick={() => setForm(f => ({ ...f, platform: p.value }))}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
                   form.platform === p.value
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                     : 'bg-white/[0.04] text-white/40 border border-white/[0.08]'
                 }`}
               >
@@ -395,7 +395,7 @@ function CompetitorsTab({ profile, onUpdate }) {
               value={form.channel_username}
               onChange={e => setForm(f => ({ ...f, channel_username: e.target.value }))}
               placeholder={form.platform === 'telegram' ? '@channel_name' : 'username'}
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:border-emerald-500/40 focus:outline-none"
+              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:border-sky-500/40 focus:outline-none"
             />
             <button onClick={handleAdd} disabled={submitting} className="btn-primary text-sm px-4">
               {submitting ? <Loader2 size={14} className="animate-spin" /> : 'Добавить'}
@@ -431,7 +431,7 @@ function CompetitorsTab({ profile, onUpdate }) {
                   <button onClick={() => loadPosts(comp.id)} className="p-2 text-white/30 hover:text-white/60 transition-colors" title="Посмотреть посты">
                     {loadingPosts === comp.id ? <Loader2 size={15} className="animate-spin" /> : expandedId === comp.id ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                   </button>
-                  <button onClick={() => handleParse(comp.id)} className="p-2 text-white/30 hover:text-emerald-400 transition-colors" title="Обновить">
+                  <button onClick={() => handleParse(comp.id)} className="p-2 text-white/30 hover:text-sky-400 transition-colors" title="Обновить">
                     <RefreshCw size={15} />
                   </button>
                   <button onClick={() => handleDelete(comp.id)} className="p-2 text-white/30 hover:text-red-400 transition-colors" title="Удалить">
@@ -564,7 +564,7 @@ function PlansTab({ plans, onUpdate }) {
                 onClick={() => setGenForm(f => ({ ...f, platform: p.value }))}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
                   genForm.platform === p.value
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                     : 'bg-white/[0.04] text-white/40 border border-white/[0.08]'
                 }`}
               >
@@ -580,7 +580,7 @@ function PlansTab({ plans, onUpdate }) {
                 onClick={() => setGenForm(f => ({ ...f, period_days: d }))}
                 className={`px-3 py-1.5 rounded-lg text-sm ${
                   genForm.period_days === d
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
                     : 'bg-white/[0.04] text-white/40 border border-white/[0.08]'
                 }`}
               >
@@ -615,7 +615,7 @@ function PlansTab({ plans, onUpdate }) {
                     <div className="text-sm font-medium text-white">{plan.title}</div>
                     <div className="text-xs text-white/30">
                       {new Date(plan.created_at).toLocaleDateString()} · {plan.item_count} постов ·{' '}
-                      <span className={plan.status === 'ready' ? 'text-emerald-400' : plan.status === 'error' ? 'text-red-400' : 'text-yellow-400'}>
+                      <span className={plan.status === 'ready' ? 'text-sky-400' : plan.status === 'error' ? 'text-red-400' : 'text-yellow-400'}>
                         {plan.status === 'ready' ? 'Готов' : plan.status === 'error' ? 'Ошибка' : 'Генерация...'}
                       </span>
                     </div>
@@ -651,7 +651,7 @@ function PlanDetail({ plan, loading, onUpdate }) {
   const [copied, setCopied] = useState(null)
 
   if (loading) {
-    return <div className="py-4 text-center"><Loader2 className="w-5 h-5 text-emerald-400 animate-spin mx-auto" /></div>
+    return <div className="py-4 text-center"><Loader2 className="w-5 h-5 text-sky-400 animate-spin mx-auto" /></div>
   }
 
   if (plan.status === 'error') {
@@ -733,7 +733,7 @@ function PlanDetail({ plan, loading, onUpdate }) {
               <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${postTypeColors[item.post_type] || 'bg-white/10 text-white/50'}`}>
                 {item.post_type}
               </span>
-              {item.is_edited && <span className="text-[10px] text-emerald-400/50">изменено</span>}
+              {item.is_edited && <span className="text-[10px] text-sky-400/50">изменено</span>}
             </div>
             <div className="flex items-center gap-2 text-xs text-white/25">
               {item.best_time && <span className="flex items-center gap-1"><Clock size={10} /> {item.best_time}</span>}
@@ -748,7 +748,7 @@ function PlanDetail({ plan, loading, onUpdate }) {
                 value={editText}
                 onChange={e => setEditText(e.target.value)}
                 rows={6}
-                className="w-full bg-white/[0.04] border border-emerald-500/30 rounded-lg px-3 py-2 text-white text-xs focus:outline-none resize-none"
+                className="w-full bg-white/[0.04] border border-sky-500/30 rounded-lg px-3 py-2 text-white text-xs focus:outline-none resize-none"
               />
               <div className="flex gap-2">
                 <button onClick={() => handleSave(item.id)} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
@@ -779,7 +779,7 @@ function PlanDetail({ plan, loading, onUpdate }) {
                   className="flex items-center gap-1 text-[10px] text-white/25 hover:text-white/50 transition-colors"
                   title="Копировать скрипт"
                 >
-                  {copied === `script-${item.id}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                  {copied === `script-${item.id}` ? <Check size={10} className="text-sky-400" /> : <Copy size={10} />}
                   {copied === `script-${item.id}` ? 'Скопировано' : 'Копировать'}
                 </button>
               </div>
@@ -811,7 +811,7 @@ function PlanDetail({ plan, loading, onUpdate }) {
           )}
 
           {item.hashtags && (
-            <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-400/40">
+            <div className="mt-2 flex items-center gap-1 text-[10px] text-sky-400/40">
               <Hash size={10} /> {item.hashtags}
             </div>
           )}

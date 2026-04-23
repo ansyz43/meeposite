@@ -12,7 +12,7 @@ const TABS = [
 
 function StatCard({ label, value, sub, accent }) {
   return (
-    <div className={`glass-card p-5 ${accent ? 'border-emerald-500/20' : ''}`}>
+    <div className={`glass-card p-5 ${accent ? 'border-sky-500/20' : ''}`}>
       <div className="text-white/40 text-xs font-medium mb-2">{label}</div>
       <div className="text-2xl font-display font-bold text-white">{value}</div>
       {sub && <div className="text-white/30 text-xs mt-1">{sub}</div>}
@@ -28,7 +28,7 @@ function StatsTab() {
     api.get('/api/admin/stats').then(r => setStats(r.data)).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
   if (!stats) return null
 
   return (
@@ -86,14 +86,14 @@ function UserDetailModal({ userId, onClose }) {
           <button onClick={onClose} className="p-1 text-white/30 hover:text-white transition-colors"><X size={18} /></button>
         </div>
         {loading ? (
-          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
         ) : user ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-white/40">Email:</span> <span className="text-white/80">{user.email}</span></div>
               <div><span className="text-white/40">Имя:</span> <span className="text-white/80">{user.name}</span></div>
               <div><span className="text-white/40">Провайдер:</span> <span className="text-white/80">{user.auth_provider || 'email'}</span></div>
-              <div><span className="text-white/40">Активен:</span> <span className={user.is_active ? 'text-emerald-400' : 'text-red-400'}>{user.is_active ? 'Да' : 'Нет'}</span></div>
+              <div><span className="text-white/40">Активен:</span> <span className={user.is_active ? 'text-sky-400' : 'text-red-400'}>{user.is_active ? 'Да' : 'Нет'}</span></div>
               <div><span className="text-white/40">Контакты:</span> <span className="text-white/80">{user.contacts_count}</span></div>
               <div><span className="text-white/40">Сообщения:</span> <span className="text-white/80">{user.messages_count}</span></div>
               <div><span className="text-white/40">Кэшбэк:</span> <span className="text-white/80">{user.cashback_balance}</span></div>
@@ -106,12 +106,12 @@ function UserDetailModal({ userId, onClose }) {
                 <div className="space-y-2">
                   {user.bots.map(b => (
                     <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                      <Bot size={16} className={b.platform === 'vk' ? 'text-blue-400' : 'text-emerald-400'} />
+                      <Bot size={16} className={b.platform === 'vk' ? 'text-blue-400' : 'text-sky-400'} />
                       <div className="text-sm">
                         <span className="text-white/70">@{b.bot_username || 'no-username'}</span>
                         <span className="text-white/30 ml-2">({b.platform})</span>
                       </div>
-                      <div className={`ml-auto text-xs px-2 py-0.5 rounded-full ${b.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                      <div className={`ml-auto text-xs px-2 py-0.5 rounded-full ${b.is_active ? 'bg-sky-500/10 text-sky-400' : 'bg-white/5 text-white/30'}`}>
                         {b.is_active ? 'Активен' : 'Неактивен'}
                       </div>
                     </div>
@@ -177,13 +177,13 @@ function UsersTab() {
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(0) }}
           placeholder="Поиск по имени или email..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-sky-500/30"
         />
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -207,7 +207,7 @@ function UsersTab() {
                   <td className="py-3 px-3">
                     <div className="flex gap-1">
                       {u.bots?.map(b => (
-                        <span key={b.id} className={`text-xs px-1.5 py-0.5 rounded ${b.platform === 'vk' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <span key={b.id} className={`text-xs px-1.5 py-0.5 rounded ${b.platform === 'vk' ? 'bg-blue-500/10 text-blue-400' : 'bg-sky-500/10 text-sky-400'}`}>
                           {b.platform === 'vk' ? 'VK' : 'TG'}
                         </span>
                       ))}
@@ -215,7 +215,7 @@ function UsersTab() {
                     </div>
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${u.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${u.is_active ? 'bg-sky-500/10 text-sky-400' : 'bg-red-500/10 text-red-400'}`}>
                       {u.is_active ? 'Активен' : 'Заблокирован'}
                     </span>
                   </td>
@@ -322,12 +322,12 @@ function BotsTab() {
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(0) }}
           placeholder="Поиск по username бота..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-sky-500/30"
         />
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -349,7 +349,7 @@ function BotsTab() {
                     <div className="text-white/25 text-xs">{b.assistant_name}</div>
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${b.platform === 'vk' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${b.platform === 'vk' ? 'bg-blue-500/10 text-blue-400' : 'bg-sky-500/10 text-sky-400'}`}>
                       {b.platform === 'vk' ? 'VK' : 'Telegram'}
                     </span>
                   </td>
@@ -365,7 +365,7 @@ function BotsTab() {
                   </td>
                   <td className="py-3 px-3 text-white/50">{b.contacts_count}</td>
                   <td className="py-3 px-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${b.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${b.is_active ? 'bg-sky-500/10 text-sky-400' : 'bg-white/5 text-white/30'}`}>
                       {b.is_active ? 'Активен' : 'Неактивен'}
                     </span>
                   </td>
@@ -433,8 +433,8 @@ function BotDetailModal({ botId, onClose }) {
       <div className="glass-card p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bot?.platform === 'vk' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
-              <Bot size={20} className={bot?.platform === 'vk' ? 'text-blue-400' : 'text-emerald-400'} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bot?.platform === 'vk' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-sky-500/10 border border-sky-500/20'}`}>
+              <Bot size={20} className={bot?.platform === 'vk' ? 'text-blue-400' : 'text-sky-400'} />
             </div>
             <div>
               <h3 className="font-display font-semibold text-white">@{bot?.bot_username || '...'}</h3>
@@ -445,7 +445,7 @@ function BotDetailModal({ botId, onClose }) {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
         ) : bot ? (
           <div className="space-y-5">
             {/* Main info */}
@@ -453,12 +453,12 @@ function BotDetailModal({ botId, onClose }) {
               <div className="text-white/40 text-xs font-medium mb-3 flex items-center gap-2"><Settings size={12} /> Настройки</div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-white/40">Имя ассистента:</span> <span className="text-white/80">{bot.assistant_name}</span></div>
-                <div><span className="text-white/40">Статус:</span> <span className={bot.is_active ? 'text-emerald-400' : 'text-red-400'}>{bot.is_active ? 'Активен' : 'Неактивен'}</span></div>
+                <div><span className="text-white/40">Статус:</span> <span className={bot.is_active ? 'text-sky-400' : 'text-red-400'}>{bot.is_active ? 'Активен' : 'Неактивен'}</span></div>
                 <div className="col-span-2"><span className="text-white/40">Ссылка продавца:</span> <span className="text-white/80 break-all">{bot.seller_link || '—'}</span></div>
                 {bot.platform === 'vk' && bot.vk_group_id && (
                   <div><span className="text-white/40">VK Group ID:</span> <span className="text-white/80">{bot.vk_group_id}</span></div>
                 )}
-                <div><span className="text-white/40">Партнёры:</span> <span className={bot.allow_partners ? 'text-emerald-400' : 'text-white/50'}>{bot.allow_partners ? 'Включены' : 'Выключены'}</span></div>
+                <div><span className="text-white/40">Партнёры:</span> <span className={bot.allow_partners ? 'text-sky-400' : 'text-white/50'}>{bot.allow_partners ? 'Включены' : 'Выключены'}</span></div>
                 <div><span className="text-white/40">Создан:</span> <span className="text-white/80">{bot.created_at ? new Date(bot.created_at).toLocaleString('ru') : '—'}</span></div>
               </div>
             </div>
@@ -543,12 +543,12 @@ function ReferralsTab() {
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(0) }}
           placeholder="Поиск по имени или email..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-sky-500/30"
         />
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
       ) : referrals.length === 0 ? (
         <div className="text-center text-white/30 text-sm py-10">Нет реферальных привязок</div>
       ) : (
@@ -695,7 +695,7 @@ function ChatsTab() {
         {/* Messages */}
         <div ref={chatRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto p-4 space-y-3 relative">
           {msgLoading ? (
-            <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+            <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
           ) : messages.length === 0 ? (
             <div className="text-center text-white/20 text-sm py-10">Нет сообщений</div>
           ) : (
@@ -704,10 +704,10 @@ function ChatsTab() {
                 <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words ${
                   m.role === 'user'
                     ? 'bg-white/[0.06] text-white/80 rounded-bl-md'
-                    : 'bg-emerald-500/10 text-emerald-100 border border-emerald-500/10 rounded-br-md'
+                    : 'bg-sky-500/10 text-sky-100 border border-sky-500/10 rounded-br-md'
                 }`}>
                   {m.content}
-                  <div className={`text-[10px] mt-1 ${m.role === 'user' ? 'text-white/20' : 'text-emerald-500/40'}`}>
+                  <div className={`text-[10px] mt-1 ${m.role === 'user' ? 'text-white/20' : 'text-sky-500/40'}`}>
                     {m.created_at ? new Date(m.created_at).toLocaleString('ru', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
                   </div>
                 </div>
@@ -740,7 +740,7 @@ function ChatsTab() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(0) }}
               placeholder="Поиск по имени или username..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-sky-500/30"
             />
           </div>
           <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
@@ -752,7 +752,7 @@ function ChatsTab() {
               <button key={t.key} onClick={() => { setPlatform(t.key); setPage(0) }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   platform === t.key
-                    ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                    ? 'bg-sky-500/10 text-sky-400 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.24)]'
                     : 'text-white/40 hover:text-white/60'
                 }`}>
                 {t.label}
@@ -764,7 +764,7 @@ function ChatsTab() {
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" /></div>
       ) : conversations.length === 0 ? (
         <div className="glass-card p-10 text-center text-white/30 text-sm">Нет переписок</div>
       ) : (
@@ -843,7 +843,7 @@ export default function AdminPage() {
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.key
-                ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                ? 'bg-sky-500/10 text-sky-400 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.24)]'
                 : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
             }`}
           >

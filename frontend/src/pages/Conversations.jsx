@@ -133,7 +133,7 @@ export default function Conversations() {
                   key={c.contact_id}
                   onClick={() => selectConversation(c.contact_id)}
                   className={`w-full text-left p-4 border-b border-white/[0.04] hover:bg-white/[0.03] transition-all duration-200 ${
-                    selected === c.contact_id ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500'
+                    selected === c.contact_id ? 'bg-sky-500/10 border-l-2 border-l-blue-500'
                     : c.link_sent ? 'bg-green-500/[0.03] border-l-2 border-l-green-500/50'
                     : ''
                   }`}
@@ -187,7 +187,7 @@ export default function Conversations() {
                 <div />
                 <button
                   onClick={exportConversation}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-emerald-400 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-sky-400 transition-colors"
                 >
                   <Download size={14} />
                   Скачать
@@ -199,7 +199,7 @@ export default function Conversations() {
                     <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
                       m.role === 'user'
                         ? 'bg-white/[0.05] text-white/80 rounded-tl-md border border-white/[0.04]'
-                        : 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white/90 rounded-tr-md border border-emerald-500/10'
+                        : 'bg-gradient-to-r from-sky-500/20 to-blue-600/20 text-white/90 rounded-tr-md border border-sky-500/10'
                     }`}>
                       <p className="whitespace-pre-wrap">{m.content}</p>
                       <div className="text-[10px] text-white/25 mt-1.5 text-right">
@@ -212,7 +212,7 @@ export default function Conversations() {
               </div>
               {showScrollBtn && (
                 <button onClick={scrollToBottom}
-                  className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-[#0C1219]/90 border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:border-emerald-500/30 transition-all shadow-lg z-10">
+                  className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-[#0C1219]/90 border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:border-sky-500/30 transition-all shadow-lg z-10">
                   <ArrowDown size={16} />
                 </button>
               )}

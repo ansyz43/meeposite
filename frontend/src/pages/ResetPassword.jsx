@@ -56,13 +56,13 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-[#060B11]">
+    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-background">
       <div className="absolute inset-0 mesh-gradient" />
-      <div className="absolute top-[30%] right-[20%] w-[400px] h-[400px] bg-emerald-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[30%] right-[20%] w-[400px] h-[400px] bg-sky-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute inset-0 noise" />
       <div className="w-full max-w-md relative">
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center">
             <Lock size={16} className="text-white" />
           </div>
           <span className="text-2xl font-display font-bold gradient-text">Meepo</span>
@@ -134,7 +134,7 @@ export default function ResetPassword() {
           )}
 
           <p className="text-center text-white/40 text-sm mt-6">
-            <Link to="/login" className="text-emerald-400 hover:underline">Вернуться к входу</Link>
+            <Link to="/login" className="text-sky-400 hover:underline">Вернуться к входу</Link>
           </p>
         </div>
       </div>

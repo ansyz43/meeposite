@@ -17,10 +17,10 @@ export default {
           600: '#334155',
         },
         accent: {
-          DEFAULT: '#10B981',
-          500: '#10B981',
-          400: '#34D399',
-          600: '#059669',
+          DEFAULT: '#2563EB',
+          500: '#2563EB',
+          400: '#38BDF8',
+          600: '#1D4ED8',
           foreground: '#FFFFFF',
         },
         background: 'hsl(var(--background))',
@@ -59,16 +59,16 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+        display: ['Fira Sans', 'system-ui', 'sans-serif'],
+        mono: ['Fira Code', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(16, 185, 129, 0.15)',
-        'glow-lg': '0 0 40px rgba(16, 185, 129, 0.2)',
-        'glow-xl': '0 0 60px rgba(16, 185, 129, 0.25), 0 0 100px rgba(16, 185, 129, 0.1)',
+        'glow': '0 0 20px rgba(37, 99, 235, 0.18)',
+        'glow-lg': '0 0 40px rgba(14, 165, 233, 0.24)',
+        'glow-xl': '0 0 60px rgba(14, 165, 233, 0.28), 0 0 100px rgba(37, 99, 235, 0.14)',
         'card': '0 4px 24px rgba(0, 0, 0, 0.2)',
-        'card-hover': '0 8px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(16, 185, 129, 0.08)',
+        'card-hover': '0 8px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(14, 165, 233, 0.14)',
       },
       keyframes: {
         'rainbow': {
@@ -84,8 +84,8 @@ export default {
           '50%': { transform: 'translateY(-10px)' },
         },
         'pulse-glow': {
-          '0%, 100%': { opacity: '0.4', boxShadow: '0 0 10px rgba(16,185,129,0.2)' },
-          '50%': { opacity: '1', boxShadow: '0 0 25px rgba(16,185,129,0.4)' },
+          '0%, 100%': { opacity: '0.4', boxShadow: '0 0 10px rgba(37,99,235,0.2)' },
+          '50%': { opacity: '1', boxShadow: '0 0 25px rgba(14,165,233,0.45)' },
         },
         'slide-up': {
           from: { opacity: '0', transform: 'translateY(30px)' },

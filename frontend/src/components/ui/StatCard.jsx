@@ -2,8 +2,8 @@ export default function StatCard({ icon: Icon, label, value, color = 'emerald', 
   const colors = {
     green: 'text-green-400 bg-green-500/10 border-green-500/20',
     yellow: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    teal: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
+    emerald: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+    teal: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
   }
   return (
     <div className="stat-card p-5 group hover:border-white/[0.1] transition-all duration-300">

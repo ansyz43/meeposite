@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { Bot, MessageSquare, Users, Clock, Brain, Zap, Shield, ArrowRight, CheckCircle2, ChevronDown, Sparkles, BarChart3, Globe, Eye, Send, Plug, Settings2 } from 'lucide-react'
+import { Bot, MessageSquare, Users, Clock, Brain, Zap, Shield, ArrowRight, CheckCircle2, ChevronDown, Sparkles, BarChart3, Globe, Eye, Send, Plug, Settings2, Sun, Moon } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TextRoll } from '../components/ui/text-roll'
 import { HeroMeshGradient } from '../components/ui/hero-mesh-gradient'
+import { useTheme } from '../hooks/useTheme'
 
 /* ─── Intersection Observer hook ─── */
 function useInView(options = {}) {
@@ -57,7 +58,7 @@ function GlassCard({ children, className = '', hover = true }) {
 }
 
 /* ─────────────────────── NAVBAR ─────────────────────── */
-function Navbar() {
+function Navbar({ isLight, toggleTheme }) {
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -66,11 +67,15 @@ function Navbar() {
   }, [])
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-      scrolled ? 'bg-[#060B11]/80 backdrop-blur-2xl border-b border-white/[0.06] shadow-lg shadow-black/20' : 'bg-transparent'
+      scrolled
+        ? isLight
+          ? 'bg-white/90 backdrop-blur-2xl border-b border-slate-200 shadow-lg shadow-blue-900/5'
+          : 'bg-[#060B11]/80 backdrop-blur-2xl border-b border-white/[0.06] shadow-lg shadow-black/20'
+        : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center">
             <Bot size={18} className="text-white" />
           </div>
           <span className="text-xl font-display font-bold gradient-text">Meepo</span>
@@ -81,6 +86,14 @@ function Navbar() {
           <a href="#faq" className="text-white/50 hover:text-white text-sm transition-colors duration-200">FAQ</a>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:text-white hover:bg-white/[0.08] transition-all duration-200 cursor-pointer"
+            aria-label={isLight ? 'Включить темную тему' : 'Включить светлую тему'}
+            title={isLight ? 'Темная тема' : 'Светлая тема'}
+          >
+            {isLight ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
           <Link to="/login" className="text-white/60 hover:text-white transition-colors text-sm hidden sm:block">Войти</Link>
           <Link to="/register" className="btn-primary text-sm !py-2 !px-5">
             <span className="relative z-10">Попробовать</span>
@@ -152,17 +165,17 @@ function Hero() {
           {/* Right: Chat mockup */}
           <div className={`transition-all duration-700 delay-200 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-3xl blur-2xl pointer-events-none" />
+              <div className="absolute -inset-4 bg-gradient-to-br from-sky-500/10 to-cyan-500/5 rounded-3xl blur-2xl pointer-events-none" />
               <GlassCard className="p-6 relative">
                 <div className="flex items-center gap-3 pb-4 border-b border-white/[0.06]">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center">
                     <Bot size={20} className="text-white" />
                   </div>
                   <div className="flex-1">
                     <div className="font-display font-semibold text-sm">Ассистент Анны</div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-xs text-emerald-400">онлайн</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                      <span className="text-xs text-sky-400">онлайн</span>
                     </div>
                   </div>
                 </div>
@@ -176,7 +189,7 @@ function Hero() {
                 {/* Input mockup */}
                 <div className="mt-4 flex items-center gap-2 bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
                   <span className="text-white/30 text-sm flex-1">Напишите сообщение...</span>
-                  <Send size={16} className="text-emerald-400" />
+                  <Send size={16} className="text-sky-400" />
                 </div>
               </GlassCard>
             </div>
@@ -195,7 +208,7 @@ function ChatBubble({ from, text, delay = 0 }) {
       <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
         isBot
           ? 'bg-white/[0.05] text-white/80 rounded-tl-md border border-white/[0.04]'
-          : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-tr-md'
+          : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
       }`}>
         {text}
       </div>
@@ -260,7 +273,7 @@ function Features() {
   return (
     <section id="features" className="py-24 px-6 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-      <div className="absolute top-[30%] right-0 w-[500px] h-[500px] bg-emerald-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[30%] right-0 w-[500px] h-[500px] bg-sky-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
 
       <div ref={ref} className="max-w-6xl mx-auto relative">
         <div className="text-center mb-16">
@@ -278,14 +291,14 @@ function Features() {
             <GlassCard key={i}
               className={`p-6 group hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 ${
                 isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-              } ${f.accent ? 'border-emerald-500/20' : ''}`}
+              } ${f.accent ? 'border-sky-500/20' : ''}`}
               style={{ transitionDelay: `${i * 80}ms` }}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300 ${
                 f.accent 
-                  ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30' 
-                  : 'bg-white/[0.05] border border-white/[0.08] group-hover:border-emerald-500/30 group-hover:bg-emerald-500/10'
+                  ? 'bg-gradient-to-br from-sky-500/20 to-cyan-500/20 border border-sky-500/30' 
+                  : 'bg-white/[0.05] border border-white/[0.08] group-hover:border-sky-500/30 group-hover:bg-sky-500/10'
               }`}>
-                <f.icon size={20} className={`${f.accent ? 'text-emerald-400' : 'text-white/60 group-hover:text-emerald-400'} transition-colors`} />
+                <f.icon size={20} className={`${f.accent ? 'text-sky-400' : 'text-white/60 group-hover:text-sky-400'} transition-colors`} />
               </div>
               <h3 className="font-display font-semibold text-base mb-2">{f.title}</h3>
               <p className="text-white/40 text-sm leading-relaxed">{f.desc}</p>
@@ -320,16 +333,16 @@ function HowItWorks() {
         <div className="grid md:grid-cols-3 gap-6 relative">
           {/* Connector lines */}
           <div className="hidden md:block absolute top-[3.25rem] left-[calc(33.333%-1rem)] right-[calc(33.333%-1rem)] h-px">
-            <div className={`h-full bg-gradient-to-r from-emerald-500/40 via-emerald-500/20 to-emerald-500/40 transition-all duration-1000 ${isInView ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} />
+            <div className={`h-full bg-gradient-to-r from-sky-500/40 via-sky-500/20 to-sky-500/40 transition-all duration-1000 ${isInView ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} />
           </div>
           {steps.map((s, i) => (
             <div key={i} className={`text-center transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
               style={{ transitionDelay: `${i * 150}ms` }}>
               <div className="relative inline-flex mb-6">
-                <div className="w-[4.5rem] h-[4.5rem] rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center shadow-glow">
-                  <s.icon size={28} className="text-emerald-400" />
+                <div className="w-[4.5rem] h-[4.5rem] rounded-2xl bg-gradient-to-br from-sky-500/20 to-cyan-500/10 border border-sky-500/30 flex items-center justify-center shadow-glow">
+                  <s.icon size={28} className="text-sky-400" />
                 </div>
-                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-emerald-500 text-[10px] font-mono font-bold text-white flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-blue-500 text-[10px] font-mono font-bold text-white flex items-center justify-center">
                   {i + 1}
                 </span>
               </div>
@@ -358,7 +371,7 @@ function Advantages() {
   return (
     <section className="py-24 px-6 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-      <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] bg-teal-500/[0.04] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] bg-cyan-500/[0.04] rounded-full blur-[100px] pointer-events-none" />
       <div ref={ref} className="max-w-4xl mx-auto relative">
         <div className="text-center mb-16">
           <div className="section-badge mx-auto">
@@ -371,11 +384,11 @@ function Advantages() {
           {items.map((item, i) => (
             <div key={i}
               className={`flex items-center gap-4 p-5 rounded-xl bg-white/[0.02] border border-white/[0.04]
-              hover:border-emerald-500/20 hover:bg-white/[0.04] transition-all duration-300 cursor-default
+              hover:border-sky-500/20 hover:bg-white/[0.04] transition-all duration-300 cursor-default
               ${isInView ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
               style={{ transitionDelay: `${i * 80}ms` }}>
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <item.icon size={16} className="text-emerald-400" />
+              <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center flex-shrink-0">
+                <item.icon size={16} className="text-sky-400" />
               </div>
               <span className="text-white/70 text-sm">{item.text}</span>
             </div>
@@ -413,14 +426,14 @@ function FAQ() {
           {items.map((item, i) => (
             <div key={i}
               className={`rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden transition-all duration-300
-              hover:border-white/[0.1] ${open === i ? 'border-emerald-500/20 bg-emerald-500/[0.02]' : ''}
+              hover:border-white/[0.1] ${open === i ? 'border-sky-500/20 bg-sky-500/[0.02]' : ''}
               ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
               style={{ transitionDelay: `${i * 60}ms` }}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="w-full flex items-center justify-between p-5 text-left cursor-pointer group">
                 <span className="font-display font-medium text-sm pr-4">{item.q}</span>
-                <ChevronDown size={18} className={`text-white/30 flex-shrink-0 transition-transform duration-300 ${open === i ? 'rotate-180 text-emerald-400' : 'group-hover:text-white/50'}`} />
+                <ChevronDown size={18} className={`text-white/30 flex-shrink-0 transition-transform duration-300 ${open === i ? 'rotate-180 text-sky-400' : 'group-hover:text-white/50'}`} />
               </button>
               <div className={`overflow-hidden transition-all duration-300 ${open === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="px-5 pb-5 text-white/50 text-sm leading-relaxed">{item.a}</div>
@@ -442,9 +455,9 @@ function CTA() {
       <div ref={ref} className={`max-w-4xl mx-auto transition-all duration-700 ${isInView ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         <div className="relative rounded-3xl overflow-hidden">
           {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-emerald-600/10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-blue-600/10" />
           <div className="absolute inset-0 mesh-gradient opacity-50" />
-          <div className="absolute inset-0 border border-emerald-500/20 rounded-3xl" />
+          <div className="absolute inset-0 border border-sky-500/20 rounded-3xl" />
           
           <div className="relative p-12 md:p-16 text-center">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
@@ -475,7 +488,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center">
               <Bot size={14} className="text-white" />
             </div>
             <span className="font-display font-bold text-white/60">Meepo</span>
@@ -494,11 +507,13 @@ function Footer() {
 
 /* ─────────────────────── MAIN ─────────────────────── */
 export default function Landing() {
+  const { isLight, toggleTheme } = useTheme()
+
   return (
-    <div className="min-h-screen bg-[#060B11] relative">
+    <div className="landing-page min-h-screen bg-background relative">
       {/* Full-page fixed animated mesh gradient background */}
       <HeroMeshGradient fixed />
-      <Navbar />
+      <Navbar isLight={isLight} toggleTheme={toggleTheme} />
       <Hero />
       <PainPoints />
       <Features />

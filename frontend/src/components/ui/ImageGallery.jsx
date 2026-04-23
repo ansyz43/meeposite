@@ -116,7 +116,7 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
               key={i}
               onClick={() => setCurrent(i)}
               className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                i === current ? 'bg-emerald-400 scale-125' : 'bg-white/30'
+                i === current ? 'bg-sky-400 scale-125' : 'bg-white/30'
               }`}
             />
           ))}
@@ -129,7 +129,7 @@ export default function ImageGallery({ images, open, onClose, startIndex = 0 }) 
               key={i}
               onClick={() => setCurrent(i)}
               className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
-                i === current ? 'border-emerald-400 scale-110' : 'border-white/20 opacity-50 hover:opacity-80'
+                i === current ? 'border-sky-400 scale-110' : 'border-white/20 opacity-50 hover:opacity-80'
               }`}
             >
               <img src={img.src} alt="" className="w-full h-full object-cover" />

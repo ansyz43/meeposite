@@ -211,7 +211,7 @@ function VisualTreeSvg({ tree, userName }) {
       >
         <defs>
           <radialGradient id="treeGlow">
-            <stop offset="0%" stopColor="rgba(16,185,129,0.08)" />
+            <stop offset="0%" stopColor="rgba(59,130,246,0.12)" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
@@ -231,7 +231,7 @@ function VisualTreeSvg({ tree, userName }) {
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">Потратил</span>
-              <span className="text-emerald-400">{(hovered.total_spent || 0).toFixed(1)} кр.</span>
+              <span className="text-sky-400">{(hovered.total_spent || 0).toFixed(1)} кр.</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">Ваш доход</span>
@@ -264,7 +264,7 @@ export default function ReferralTree({ tree, userName }) {
   return (
     <div className="glass-card p-5 overflow-hidden">
       <h2 className="font-display font-semibold mb-4 flex items-center gap-2">
-        <Users size={18} className="text-emerald-400" />
+        <Users size={18} className="text-sky-400" />
         Ваше дерево
       </h2>
       <VisualTreeSvg tree={tree} userName={userName} />

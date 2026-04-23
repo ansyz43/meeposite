@@ -354,7 +354,7 @@ export default function BotPage() {
                     </a>
                   )}
                   <div className="flex items-center gap-2 text-white/60">
-                    <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm">Ожидание создания бота...</span>
                   </div>
                 </div>
@@ -396,13 +396,13 @@ export default function BotPage() {
 
         {/* Bot link card */}
         {tgBot.bot_username && (
-          <div className="glass-card p-5 mb-6 border-l-4 border-l-emerald-500">
+          <div className="glass-card p-5 mb-6 border-l-4 border-l-blue-500">
             <div className="flex items-center gap-2 mb-3">
-              <Link2 size={18} className="text-emerald-400" />
+              <Link2 size={18} className="text-sky-400" />
               <span className="text-sm font-medium text-white/60">Ваша ссылка на бота</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-lg font-semibold text-emerald-400 break-all">
+              <span className="text-lg font-semibold text-sky-400 break-all">
                 https://t.me/{tgBot.bot_username}
               </span>
               <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ export default function BotPage() {
         <form onSubmit={saveTgSettings} className="glass-card p-6 space-y-6">
           <div>
             <h2 className="font-display font-semibold flex items-center gap-2 mb-5">
-              <Settings size={18} className="text-emerald-400" />
+              <Settings size={18} className="text-sky-400" />
               Основные настройки
             </h2>
 
@@ -467,7 +467,7 @@ export default function BotPage() {
 
           <div className="space-y-5">
             <h2 className="font-display font-semibold flex items-center gap-2">
-              <MessageCircle size={18} className="text-emerald-400" />
+              <MessageCircle size={18} className="text-sky-400" />
               Контент
             </h2>
 
@@ -497,7 +497,7 @@ export default function BotPage() {
 
           <div>
             <h2 className="font-display font-semibold flex items-center gap-2 mb-4">
-              <Handshake size={18} className="text-emerald-400" />
+              <Handshake size={18} className="text-sky-400" />
               Партнёрская программа
             </h2>
             <div className="flex items-center justify-between py-2 px-1">
@@ -528,7 +528,7 @@ export default function BotPage() {
           <div className="mt-6">
             <div className="glass-card p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Users size={20} className="text-emerald-400" />
+                <Users size={20} className="text-sky-400" />
                 <h2 className="font-display font-semibold">Партнёры ({partners.length})</h2>
               </div>
 
@@ -556,7 +556,7 @@ export default function BotPage() {
                           <td className="py-2.5">
                             {p.seller_link ? (
                               <a href={p.seller_link} target="_blank" rel="noopener noreferrer"
-                                className="text-emerald-400 hover:underline truncate block max-w-[200px]">
+                                className="text-sky-400 hover:underline truncate block max-w-[200px]">
                                 {p.seller_link.replace(/^https?:\/\//, '')}
                               </a>
                             ) : <span className="text-white/30">—</span>}
@@ -585,7 +585,7 @@ export default function BotPage() {
                               </div>
                             ) : (
                               <button onClick={() => { setAddingCredits(p.id); setCreditsAmount(5) }}
-                                className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs ml-auto">
+                                className="flex items-center gap-1 text-sky-400 hover:text-sky-300 text-xs ml-auto">
                                 <PlusCircle size={14} /> Кредиты
                               </button>
                             )}

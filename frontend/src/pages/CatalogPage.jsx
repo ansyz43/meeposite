@@ -69,7 +69,7 @@ export default function CatalogPage() {
               onClick={() => setSelectedBot(selectedBot?.id === bot.id ? null : bot)}
               className={`glass-card p-5 cursor-pointer transition-all duration-300 ${
                 selectedBot?.id === bot.id
-                  ? 'border-emerald-500/50 bg-emerald-500/[0.06] shadow-[0_0_30px_rgba(16,185,129,0.08)]'
+                  ? 'border-sky-500/50 bg-sky-500/[0.06] shadow-[0_0_30px_rgba(59,130,246,0.12)]'
                   : 'hover:bg-white/[0.04]'
               }`}
             >
@@ -77,8 +77,8 @@ export default function CatalogPage() {
                 {bot.avatar_url ? (
                   <img src={bot.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center">
-                    <Bot size={24} className="text-emerald-400" />
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500/20 to-cyan-500/10 flex items-center justify-center">
+                    <Bot size={24} className="text-sky-400" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -88,7 +88,7 @@ export default function CatalogPage() {
                   )}
                 </div>
                 {selectedBot?.id === bot.id && (
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
                 )}

@@ -70,7 +70,7 @@ export default function BroadcastPage() {
       {/* Create broadcast */}
       <div className="glass-card p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Send size={20} className="text-emerald-400" />
+          <Send size={20} className="text-sky-400" />
           <h2 className="font-semibold">Новая рассылка</h2>
         </div>
 
@@ -110,7 +110,7 @@ export default function BroadcastPage() {
       {/* Broadcast history */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Megaphone size={20} className="text-emerald-400" />
+          <Megaphone size={20} className="text-sky-400" />
           <h2 className="font-display font-semibold">История рассылок</h2>
         </div>
 

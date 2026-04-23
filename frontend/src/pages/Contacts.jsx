@@ -65,7 +65,7 @@ export default function Contacts() {
       return <a href={`https://vk.com/id${c.vk_id}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">id{c.vk_id}</a>
     }
     if (c.telegram_username) {
-      return <a href={`https://t.me/${c.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 transition-colors">@{c.telegram_username}</a>
+      return <a href={`https://t.me/${c.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:text-sky-300 transition-colors">@{c.telegram_username}</a>
     }
     return <span className="text-white/20">—</span>
   }

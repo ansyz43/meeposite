@@ -12,7 +12,7 @@ export default function TelegramGroupPopup({ open, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top accent */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
 
         {/* Close */}
         <button 
@@ -24,8 +24,8 @@ export default function TelegramGroupPopup({ open, onClose }) {
 
         <div className="p-8 text-center">
           {/* Icon */}
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5 shadow-glow">
-            <Users size={28} className="text-emerald-400" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500/20 to-cyan-500/10 border border-sky-500/30 flex items-center justify-center mx-auto mb-5 shadow-glow">
+            <Users size={28} className="text-sky-400" />
           </div>
 
           <h3 className="font-display text-xl font-bold mb-3">Вступите в группу поддержки</h3>
@@ -39,7 +39,7 @@ export default function TelegramGroupPopup({ open, onClose }) {
             href={TG_GROUP_LINK}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 active:translate-y-0"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-sky-400 hover:to-cyan-500 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <ExternalLink size={16} />
             Наша ссылка
