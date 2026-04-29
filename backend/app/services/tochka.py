@@ -42,6 +42,9 @@ async def create_payment_operation(
     fail_url: str | None = None,
     consumer_id: str | None = None,
     payment_mode: list[str] | None = None,
+    client_email: str | None = None,
+    client_phone: str | None = None,
+    item_name: str | None = None,
 ) -> dict[str, Any]:
     """Create a payment operation and return Tochka response.
 
@@ -50,24 +53,44 @@ async def create_payment_operation(
     if not _is_configured():
         raise TochkaError("Tochka not configured (TOCHKA_JWT / TOCHKA_CUSTOMER_CODE)")
 
+    amount_str = f"{float(amount):.2f}"
+    item_label = (item_name or purpose or "Подписка")[:128]
+
+    client_info: dict[str, Any] = {}
+    if client_email:
+        client_info["email"] = client_email
+    if client_phone:
+        client_info["phone"] = client_phone
+    # Tochka requires either email or phone for receipt delivery (54-ФЗ).
+    if not client_info:
+        client_info["email"] = "noreply@meepo.su"
+
     body = {
         "Data": {
             "customerCode": settings.TOCHKA_CUSTOMER_CODE,
-            "amount": f"{float(amount):.2f}",
-            "purpose": purpose[:140],
+            "amount": amount_str,
+            "purpose": (purpose or item_label)[:140],
             "paymentMode": payment_mode or ["sbp", "card"],
             "redirectUrl": redirect_url or settings.TOCHKA_REDIRECT_URL,
             "failRedirectUrl": fail_url or settings.TOCHKA_FAIL_URL,
             "saveCard": False,
             "preAuthorization": False,
-            "merchantId": None,
-            "Client": {
-                "code": consumer_id or order_id,
-            },
+            "Client": client_info,
+            "Items": [
+                {
+                    "vatType": "none",
+                    "name": item_label,
+                    "amount": amount_str,
+                    "quantity": 1,
+                    "paymentMethod": "full_payment",
+                    "paymentObject": "service",
+                    "measure": "усл.",
+                }
+            ],
         }
     }
-    # Strip None values
-    body["Data"] = {k: v for k, v in body["Data"].items() if v is not None}
+    if consumer_id:
+        body["Data"]["consumerId"] = consumer_id
 
     url = f"{settings.TOCHKA_BASE_URL.rstrip('/')}/payments_with_receipt"
     timeout = httpx.Timeout(20.0, connect=10.0)

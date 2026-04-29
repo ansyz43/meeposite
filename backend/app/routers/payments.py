@@ -63,6 +63,8 @@ async def create_subscription_payment(
             purpose=f"Подписка Meepo Pro (заказ {order_id})",
             order_id=order_id,
             consumer_id=str(user.id),
+            client_email=user.email,
+            item_name="Подписка Meepo Pro · 1 месяц",
         )
     except tochka.TochkaError as e:
         logger.error("Failed to create Tochka payment: %s", e)

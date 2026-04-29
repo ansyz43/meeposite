@@ -1,0 +1,1 @@
+{"Data":{"customerCode":"301849273","amount":"10000.00","purpose":"Test payment","paymentMode":["sbp","card"],"redirectUrl":"https://meepo.su/dashboard/profile?paid=1","failRedirectUrl":"https://meepo.su/dashboard/profile?paid=0","saveCard":false,"preAuthorization":false}}
