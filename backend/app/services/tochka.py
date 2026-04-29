@@ -84,7 +84,7 @@ async def create_payment_operation(
                     "quantity": 1,
                     "paymentMethod": "full_payment",
                     "paymentObject": "service",
-                    "measure": "усл.",
+                    "measure": "шт.",
                 }
             ],
         }
