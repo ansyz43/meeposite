@@ -21,6 +21,7 @@ from app.schemas import BotUpdateRequest, BotResponse, BotStatusResponse, VkConn
 from app.auth import get_current_user
 from app.config import settings
 from app.services.crypto import decrypt_token, encrypt_token
+from app.services.subscription import require_active_subscription
 
 router = APIRouter(prefix="/api/bot", tags=["bot"])
 
@@ -238,6 +239,9 @@ async def create_bot(
     if active_tg:
         raise HTTPException(status_code=400, detail="У вас уже есть Telegram-бот")
 
+    # Subscription gate (covers both TG and VK)
+    await require_active_subscription(user, db)
+
     if not settings.MANAGER_BOT_TOKEN:
         raise HTTPException(status_code=503, detail="Автоматическое создание ботов не настроено")
 
@@ -332,6 +336,9 @@ async def connect_vk_bot(
     user = await _load_user_bots(user, db)
     if _get_bot_by_platform(user, "vk"):
         raise HTTPException(status_code=400, detail="У вас уже есть VK-бот")
+
+    # Subscription gate (one subscription covers both TG and VK)
+    await require_active_subscription(user, db)
 
     # Verify VK token works by calling groups.getById
     try:

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../api'
-import { Bot, Copy, Check, Save, Trash2, Plus, Camera, Users, PlusCircle, Link2, ExternalLink, Settings, MessageCircle, Handshake, ZoomIn } from 'lucide-react'
+import { Bot, Copy, Check, Save, Trash2, Plus, Camera, Users, PlusCircle, Link2, ExternalLink, Settings, MessageCircle, Handshake, ZoomIn, Crown, CreditCard, Lock } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/ui/PageHeader'
 import Loader from '../components/ui/Loader'
@@ -69,7 +69,34 @@ export default function BotPage() {
   const [vkConnectName, setVkConnectName] = useState('')
   const [vkConnecting, setVkConnecting] = useState(false)
 
+  // Subscription gate
+  const [hasSubscription, setHasSubscription] = useState(null) // null = loading
+  const [subscribing, setSubscribing] = useState(false)
+
   useEffect(() => { loadBots() }, [])
+
+  useEffect(() => {
+    api.get('/api/payments/me')
+      .then(({ data }) => setHasSubscription(!!data?.has_active_subscription))
+      .catch(() => setHasSubscription(false))
+  }, [])
+
+  async function startSubscription() {
+    setSubscribing(true)
+    setError('')
+    try {
+      const { data } = await api.post('/api/payments/subscription')
+      if (data?.payment_link) {
+        window.location.href = data.payment_link
+        return
+      }
+      setError('Сервер не вернул ссылку на оплату')
+    } catch (err) {
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : 'Не удалось создать платёж')
+    }
+    setSubscribing(false)
+  }
 
   async function loadBots() {
     try {
@@ -311,6 +338,39 @@ export default function BotPage() {
 
   if (loading) return <Loader />
 
+  // ── Subscription gate (shown above empty-states or anywhere bot creation is blocked) ──
+  const subscriptionGate = hasSubscription === false ? (
+    <div className="glass-card p-6 mb-6 border-l-4 border-l-amber-400 bg-gradient-to-r from-amber-500/[0.07] to-transparent">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+          <Crown size={22} className="text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display font-semibold text-white mb-1 flex items-center gap-2">
+            <Lock size={14} className="text-amber-400" />
+            Нужна подписка Meepo Pro
+          </h3>
+          <p className="text-sm text-white/60 mb-3">
+            Подключение бота — Telegram <span className="text-white/40">или</span> ВКонтакте — доступно по подписке.
+            Одна подписка покрывает обе площадки.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button onClick={startSubscription} disabled={subscribing}
+              className="btn-primary inline-flex items-center gap-2 disabled:opacity-50">
+              <span className="relative z-10 flex items-center gap-2">
+                <CreditCard size={16} /> {subscribing ? 'Создание платежа...' : 'Оплатить 10 000 ₽ / месяц'}
+              </span>
+            </button>
+            <a href="/offer" target="_blank" rel="noopener noreferrer"
+              className="text-xs text-white/40 hover:text-white/60 underline">
+              Условия оферты
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   // ── Platform tabs ──
   const tabBar = (
     <div className="flex gap-1 p-1 bg-white/[0.04] rounded-xl mb-6">
@@ -340,6 +400,7 @@ export default function BotPage() {
         <div>
           <PageHeader title="Мой бот" />
           {tabBar}
+          {subscriptionGate}
           {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
           {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
 
@@ -386,10 +447,10 @@ export default function BotPage() {
                       <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Политику обработки персональных данных</a>
                     </span>
                   </label>
-                  <button onClick={createManagedBot} disabled={claiming || !termsAccepted}
+                  <button onClick={createManagedBot} disabled={claiming || !termsAccepted || hasSubscription === false}
                     className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span className="relative z-10 flex items-center gap-2">
-                      <Plus size={20} /> {claiming ? 'Создание...' : 'Создать бота'}
+                      <Plus size={20} /> {claiming ? 'Создание...' : (hasSubscription === false ? 'Сначала оплатите подписку' : 'Создать бота')}
                     </span>
                   </button>
                 </div>
@@ -645,6 +706,7 @@ export default function BotPage() {
       <div>
         <PageHeader title="Мой бот" />
         {tabBar}
+        {subscriptionGate}
         {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm mb-4">{error}</div>}
         {success && <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">{success}</div>}
 
@@ -720,10 +782,10 @@ export default function BotPage() {
               </button>
             </div>
 
-            <button type="submit" disabled={vkConnecting}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+            <button type="submit" disabled={vkConnecting || hasSubscription === false}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
               <span className="relative z-10 flex items-center gap-2">
-                <VkIcon size={18} /> {vkConnecting ? 'Подключение...' : 'Подключить VK-бота'}
+                <VkIcon size={18} /> {vkConnecting ? 'Подключение...' : (hasSubscription === false ? 'Сначала оплатите подписку' : 'Подключить VK-бота')}
               </span>
             </button>
           </form>
