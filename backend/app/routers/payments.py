@@ -33,6 +33,50 @@ def _generate_order_id() -> str:
     return f"meepo-{ts}-{secrets.token_hex(4)}"
 
 
+def _map_tochka_status(status_raw: str) -> str | None:
+    s = (status_raw or "").upper()
+    if s in ("APPROVED", "CONFIRMED", "PAID", "SUCCESS"):
+        return "paid"
+    if s in ("REJECTED", "FAILED", "DECLINED"):
+        return "failed"
+    if s in ("CANCELED", "CANCELLED", "REFUNDED", "EXPIRED"):
+        return "cancelled"
+    if s in ("CREATED", "PENDING", "PROCESSING", "WAITING"):
+        return "pending"
+    return None
+
+
+async def _refresh_payment_from_tochka(payment: Payment, db: AsyncSession) -> Payment:
+    """Poll Tochka for current status and update Payment row in place."""
+    if payment.status in ("paid", "failed", "cancelled"):
+        return payment
+    if not payment.operation_id:
+        return payment
+    try:
+        raw = await tochka.get_payment_operation(payment.operation_id)
+    except tochka.TochkaError as e:
+        logger.warning("Tochka poll failed for op=%s: %s", payment.operation_id, e)
+        return payment
+    # Tochka returns: {"Data": {"Operation": [{...}]}}
+    data = raw.get("Data", raw) if isinstance(raw, dict) else {}
+    op = None
+    if isinstance(data, dict):
+        ops = data.get("Operation")
+        if isinstance(ops, list) and ops:
+            op = ops[0]
+        else:
+            op = data
+    status_str = (op or {}).get("status", "") if isinstance(op, dict) else ""
+    new_status = _map_tochka_status(status_str)
+    if new_status and new_status != payment.status:
+        payment.status = new_status
+        if new_status == "paid":
+            payment.paid_at = datetime.datetime.utcnow()
+        await db.commit()
+        await db.refresh(payment)
+    return payment
+
+
 @router.post("/subscription", response_model=CreateSubscriptionPaymentResponse)
 async def create_subscription_payment(
     user: User = Depends(get_current_user),
@@ -88,6 +132,75 @@ async def create_subscription_payment(
         operation_id=payment.operation_id,
         amount=amount,
     )
+
+
+class PaymentStatusResponse(BaseModel):
+    payment_id: int
+    operation_id: str | None
+    status: str
+    amount: float
+    paid_at: datetime.datetime | None
+
+
+@router.get("/status/{operation_id}", response_model=PaymentStatusResponse)
+async def get_payment_status(
+    operation_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Polling endpoint: fetch current status of a payment, refreshing it from Tochka if pending."""
+    result = await db.execute(
+        select(Payment).where(
+            Payment.operation_id == operation_id, Payment.user_id == user.id
+        )
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Платёж не найден")
+    payment = await _refresh_payment_from_tochka(payment, db)
+    return PaymentStatusResponse(
+        payment_id=payment.id,
+        operation_id=payment.operation_id,
+        status=payment.status,
+        amount=float(payment.amount),
+        paid_at=payment.paid_at,
+    )
+
+
+@router.get("/me")
+async def my_payments(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List user's payments. Refreshes any pending ones via Tochka polling."""
+    result = await db.execute(
+        select(Payment).where(Payment.user_id == user.id).order_by(Payment.created_at.desc()).limit(20)
+    )
+    payments = result.scalars().all()
+    # Refresh pending payments in background-ish manner (sequentially, but bounded by limit=20)
+    for p in payments:
+        if p.status == "pending":
+            await _refresh_payment_from_tochka(p, db)
+    has_active_subscription = any(
+        p.status == "paid" and p.purpose == "subscription"
+        and p.paid_at and (datetime.datetime.utcnow() - p.paid_at).days < 31
+        for p in payments
+    )
+    return {
+        "has_active_subscription": has_active_subscription,
+        "payments": [
+            {
+                "id": p.id,
+                "operation_id": p.operation_id,
+                "status": p.status,
+                "amount": float(p.amount),
+                "purpose": p.purpose,
+                "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in payments
+        ],
+    }
 
 
 @router.post("/webhook/tochka/{secret}")

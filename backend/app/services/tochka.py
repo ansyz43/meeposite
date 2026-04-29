@@ -125,7 +125,7 @@ async def get_payment_operation(operation_id: str) -> dict[str, Any]:
         raise TochkaError("Tochka not configured")
     url = (
         f"{settings.TOCHKA_BASE_URL.rstrip('/')}"
-        f"/{settings.TOCHKA_CUSTOMER_CODE}/payments/{operation_id}"
+        f"/payments/{operation_id}"
     )
     timeout = httpx.Timeout(15.0)
     async with httpx.AsyncClient(timeout=timeout) as client:

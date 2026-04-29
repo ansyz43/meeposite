@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import api from '../api'
-import { Save, User, Lock, Mail, CreditCard, Crown } from 'lucide-react'
+import { Save, User, Lock, Mail, CreditCard, Crown, CheckCircle2, Clock } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
 export default function Profile() {
@@ -13,10 +13,54 @@ export default function Profile() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [paying, setPaying] = useState(false)
+  const [subInfo, setSubInfo] = useState(null) // { has_active_subscription, payments }
+  const [polling, setPolling] = useState(false)
+
+  async function refreshSubscription() {
+    try {
+      const { data } = await api.get('/api/payments/me')
+      setSubInfo(data)
+      return data
+    } catch { return null }
+  }
+
+  useEffect(() => { refreshSubscription() }, [])
 
   useEffect(() => {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
   }, [success])
+
+  // If returning from Tochka redirect, poll status until terminal
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const paid = params.get('paid')
+    if (paid !== '1' && paid !== '0') return
+    setPolling(true)
+    let cancelled = false
+    let attempts = 0
+    async function tick() {
+      if (cancelled) return
+      attempts += 1
+      const info = await refreshSubscription()
+      const pending = info?.payments?.some(p => p.status === 'pending')
+      if (info?.has_active_subscription) {
+        setSuccess('Подписка активирована!')
+        setPolling(false)
+        // clean URL
+        window.history.replaceState({}, '', '/dashboard/profile')
+        return
+      }
+      if (!pending || attempts >= 20) {
+        setPolling(false)
+        if (paid === '0') setError('Оплата не прошла')
+        window.history.replaceState({}, '', '/dashboard/profile')
+        return
+      }
+      setTimeout(tick, 3000)
+    }
+    tick()
+    return () => { cancelled = true }
+  }, [])
 
   async function saveName(e) {
     e.preventDefault()
@@ -140,6 +184,16 @@ export default function Profile() {
             <Crown size={18} className="text-amber-400" />
             Подписка Meepo Pro
           </h2>
+          {subInfo?.has_active_subscription && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm mb-4 flex items-center gap-2">
+              <CheckCircle2 size={16} /> Подписка активна
+            </div>
+          )}
+          {polling && (
+            <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl px-4 py-3 text-sky-300 text-sm mb-4 flex items-center gap-2">
+              <Clock size={16} className="animate-pulse" /> Проверяем статус оплаты...
+            </div>
+          )}
           <p className="text-sm text-white/60 mb-4">
             Полный доступ к CRM, рассылкам, контент-плану и расширенной аналитике.
             Оплата через банк «Точка» — банковской картой или СБП.
@@ -148,10 +202,10 @@ export default function Profile() {
             <span className="text-3xl font-display font-bold text-white">10 000 ₽</span>
             <span className="text-sm text-white/40">/ месяц</span>
           </div>
-          <button onClick={buyPro} disabled={paying}
+          <button onClick={buyPro} disabled={paying || subInfo?.has_active_subscription}
             className="btn-primary inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <span className="relative z-10 flex items-center gap-2">
-              <CreditCard size={16} /> {paying ? 'Создание платежа...' : 'Оплатить подписку'}
+              <CreditCard size={16} /> {paying ? 'Создание платежа...' : (subInfo?.has_active_subscription ? 'Оплачено' : 'Оплатить подписку')}
             </span>
           </button>
           <p className="text-[11px] text-white/30 mt-3">
