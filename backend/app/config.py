@@ -54,6 +54,15 @@ class Settings(BaseSettings):
     INSTAGRAM_PROXY: str = ""  # e.g. http://user:pass@host:port or socks5://user:pass@host:port
     INSTAGRAM_PARSER_ENABLED: bool = False  # Disabled by default until Graph API migration.
 
+    # Tochka acquiring (https://developers.tochka.com)
+    TOCHKA_JWT: str = ""
+    TOCHKA_CUSTOMER_CODE: str = ""
+    TOCHKA_BASE_URL: str = "https://enter.tochka.com/uapi/acquiring/v1.0"
+    TOCHKA_REDIRECT_URL: str = "https://meepo.su/dashboard/profile?paid=1"
+    TOCHKA_FAIL_URL: str = "https://meepo.su/dashboard/profile?paid=0"
+    TOCHKA_WEBHOOK_SECRET: str = ""  # shared secret in webhook URL path
+    TOCHKA_SUBSCRIPTION_AMOUNT: float = 10000.00  # ₽ per month
+
     model_config = {"env_file": ".env"}
 
     @model_validator(mode="after")

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import api from '../api'
-import { Save, User, Lock, Mail } from 'lucide-react'
+import { Save, User, Lock, Mail, CreditCard, Crown } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 
 export default function Profile() {
@@ -12,6 +12,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
     if (success) { const t = setTimeout(() => setSuccess(''), 3000); return () => clearTimeout(t) }
@@ -45,6 +46,23 @@ export default function Profile() {
       setError(err.response?.data?.detail || 'Ошибка')
     }
     setSaving(false)
+  }
+
+  async function buyPro() {
+    setError('')
+    setPaying(true)
+    try {
+      const { data } = await api.post('/api/payments/subscription')
+      if (data?.payment_link) {
+        window.location.href = data.payment_link
+        return
+      }
+      setError('Сервер не вернул ссылку на оплату')
+    } catch (err) {
+      const d = err.response?.data?.detail
+      setError(typeof d === 'string' ? d : 'Не удалось создать платёж')
+    }
+    setPaying(false)
   }
 
   return (
@@ -113,6 +131,34 @@ export default function Profile() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Pro subscription */}
+      <div className="glass-card overflow-hidden mt-6">
+        <div className="p-6">
+          <h2 className="font-display font-semibold flex items-center gap-2 mb-3">
+            <Crown size={18} className="text-amber-400" />
+            Подписка Meepo Pro
+          </h2>
+          <p className="text-sm text-white/60 mb-4">
+            Полный доступ к CRM, рассылкам, контент-плану и расширенной аналитике.
+            Оплата через банк «Точка» — банковской картой или СБП.
+          </p>
+          <div className="flex items-baseline gap-2 mb-5">
+            <span className="text-3xl font-display font-bold text-white">10 000 ₽</span>
+            <span className="text-sm text-white/40">/ месяц</span>
+          </div>
+          <button onClick={buyPro} disabled={paying}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span className="relative z-10 flex items-center gap-2">
+              <CreditCard size={16} /> {paying ? 'Создание платежа...' : 'Оплатить подписку'}
+            </span>
+          </button>
+          <p className="text-[11px] text-white/30 mt-3">
+            Нажимая «Оплатить», вы принимаете{' '}
+            <a href="/offer" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">условия Оферты</a>.
+          </p>
+        </div>
       </div>
     </div>
   )

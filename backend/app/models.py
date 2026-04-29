@@ -171,6 +171,26 @@ class CashbackTransaction(Base):
     from_user: Mapped["User"] = relationship("User", foreign_keys=[from_user_id])
 
 
+class Payment(Base):
+    """Tochka acquiring payment."""
+    __tablename__ = "payments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    purpose: Mapped[str] = mapped_column(String(50), nullable=False, default="subscription")  # subscription | credits | other
+    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="RUB")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="created", index=True)  # created | pending | paid | failed | cancelled
+    operation_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True, index=True)
+    payment_link: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    order_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+    paid_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+
+
 # ── Managed Bots ─────────────────────────────────────────────
 
 class PendingBotCreation(Base):
