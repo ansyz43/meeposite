@@ -19,6 +19,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.exceptions import TelegramConflictError, TelegramUnauthorizedError
 from aiogram.filters import CommandStart
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import select, update
 
 from worker.config import settings
@@ -190,6 +191,34 @@ async def save_phone(session, contact_id: int, phone: str):
     await session.flush()
 
 
+# ─── Terms / consent helpers ───
+CONSENT_PROMPT = (
+    "Перед началом общения подтвердите согласие с условиями соглашения и Политикой "
+    "обработки персональных данных."
+)
+CONSENT_THANKS = "Спасибо! Теперь я могу помочь вам. Напишите свой вопрос."
+
+
+def _consent_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Принимаю", callback_data="accept_terms")],
+        [InlineKeyboardButton(text="📄 Читать условия", url=settings.OFFER_BOT_URL)],
+    ])
+
+
+async def _mark_contact_accepted(session, contact_id: int, source: str):
+    await session.execute(
+        update(Contact)
+        .where(Contact.id == contact_id)
+        .values(
+            terms_accepted_at=_utcnow(),
+            terms_version=settings.TERMS_VERSION,
+            terms_source=source,
+        )
+    )
+    await session.flush()
+
+
 def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                       seller_link: str | None, greeting_message: str | None) -> Dispatcher:
     """Create a dispatcher with handlers for a specific bot."""
@@ -265,8 +294,34 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
 
             greeting = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
             await save_message(db, contact.id, "assistant", greeting)
+            needs_consent = not contact.terms_accepted_at
             await db.commit()
+
+        if needs_consent:
+            await message.answer(
+                f"{greeting}\n\n{CONSENT_PROMPT}",
+                reply_markup=_consent_keyboard(),
+                disable_web_page_preview=True,
+            )
+        else:
             await message.answer(greeting)
+
+    @dp.callback_query(F.data == "accept_terms")
+    async def handle_accept_terms(query: types.CallbackQuery):
+        async with async_session() as db:
+            contact = await get_or_create_contact(db, bot_db_id, query.from_user)
+            if not contact.terms_accepted_at:
+                await _mark_contact_accepted(db, contact.id, "telegram")
+            await db.commit()
+        try:
+            await query.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await query.answer("Согласие принято", show_alert=False)
+        try:
+            await query.message.answer(CONSENT_THANKS)
+        except Exception:
+            pass
 
     @dp.message(F.contact)
     async def handle_contact(message: types.Message):
@@ -283,6 +338,26 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         logger.info(f"[BOT#{bot_db_id}] Message from user {message.from_user.id}: {message.text[:50]}")
         if _is_duplicate(message.chat.id, message.message_id):
             return
+
+        # Consent gate: если контакт не принял соглашение — предлагаем принять
+        # Авто-акцепт по тексту "принимаю" для fallback.
+        text_lower = (message.text or "").strip().lower()
+        async with async_session() as db_consent:
+            contact_consent = await get_or_create_contact(db_consent, bot_db_id, message.from_user)
+            if not contact_consent.terms_accepted_at:
+                if text_lower in ("принимаю", "я принимаю", "да", "accept", "i accept"):
+                    await _mark_contact_accepted(db_consent, contact_consent.id, "telegram")
+                    await db_consent.commit()
+                    await message.answer(CONSENT_THANKS)
+                    return
+                await db_consent.commit()
+                await message.answer(
+                    CONSENT_PROMPT,
+                    reply_markup=_consent_keyboard(),
+                    disable_web_page_preview=True,
+                )
+                return
+            await db_consent.commit()
 
         # Determine effective seller_link: partner override or bot owner's
         effective_seller_link = partner_links.get(message.from_user.id) or seller_link

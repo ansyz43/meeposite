@@ -5,12 +5,14 @@ Handles incoming VK community messages via Long Poll API.
 
 import asyncio
 import datetime
+import json
 import logging
 import random
 
 import aiohttp
 from sqlalchemy import select, update as sa_update
 
+from worker.config import settings
 from worker.database import async_session
 from worker.models import Contact, Message
 from worker.ai_service import get_ai_response
@@ -23,6 +25,36 @@ VK_API_VERSION = "5.199"
 
 # Will be set from main.py
 _ai_semaphore: asyncio.Semaphore | None = None
+
+CONSENT_PROMPT = (
+    "Перед началом общения подтвердите согласие с условиями соглашения и Политикой "
+    "обработки персональных данных. Нажмите «Принимаю» или ответьте «Принимаю»."
+)
+CONSENT_THANKS = "Спасибо! Теперь я могу помочь вам. Напишите свой вопрос."
+
+
+def _consent_keyboard_json() -> str:
+    return json.dumps({
+        "inline": True,
+        "buttons": [
+            [{
+                "action": {
+                    "type": "text",
+                    "label": "✅ Принимаю",
+                    "payload": json.dumps({"action": "accept_terms"}),
+                },
+                "color": "primary",
+            }],
+            [{
+                "action": {
+                    "type": "open_link",
+                    "link": settings.OFFER_BOT_URL,
+                    "label": "📄 Читать условия",
+                    "payload": json.dumps({"action": "open_terms"}),
+                },
+            }],
+        ],
+    }, ensure_ascii=False)
 
 
 def _utcnow() -> datetime.datetime:
@@ -173,11 +205,18 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
     peer_id = msg_obj.get("peer_id")
     from_id = msg_obj.get("from_id")
     text = (msg_obj.get("text") or "").strip()
+    raw_payload = msg_obj.get("payload")
+    payload_data = None
+    if raw_payload:
+        try:
+            payload_data = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+        except Exception:
+            payload_data = None
 
     # Ignore outgoing messages (from_id < 0 means group/community)
     if not from_id or from_id < 0:
         return
-    if not text:
+    if not text and not payload_data:
         return
 
     try:
@@ -189,6 +228,44 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
                 user_info = result[0]
         except Exception:
             pass
+
+        # ── Consent gate ──
+        async with async_session() as db_consent:
+            contact_consent = await _get_or_create_vk_contact(db_consent, bot_db_id, from_id, user_info)
+            if not contact_consent.terms_accepted_at:
+                accept_via_payload = isinstance(payload_data, dict) and payload_data.get("action") == "accept_terms"
+                accept_via_text = text.lower() in ("принимаю", "я принимаю", "да", "accept")
+                if accept_via_payload or accept_via_text:
+                    await db_consent.execute(
+                        sa_update(Contact)
+                        .where(Contact.id == contact_consent.id)
+                        .values(
+                            terms_accepted_at=_utcnow(),
+                            terms_version=settings.TERMS_VERSION,
+                            terms_source="vk",
+                        )
+                    )
+                    await db_consent.commit()
+                    await _vk_api(
+                        http, "messages.send", token,
+                        peer_id=peer_id,
+                        message=CONSENT_THANKS,
+                        random_id=random.randint(1, 2**31),
+                    )
+                    return
+                await db_consent.commit()
+                await _vk_api(
+                    http, "messages.send", token,
+                    peer_id=peer_id,
+                    message=CONSENT_PROMPT,
+                    keyboard=_consent_keyboard_json(),
+                    dont_parse_links=1,
+                    random_id=random.randint(1, 2**31),
+                )
+                return
+
+        if not text:
+            return
 
         async with async_session() as db:
             contact = await _get_or_create_vk_contact(db, bot_db_id, from_id, user_info)

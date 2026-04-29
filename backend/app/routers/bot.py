@@ -1,5 +1,6 @@
 import os
 import time
+import datetime
 import logging
 import httpx
 from pathlib import Path
@@ -7,7 +8,7 @@ from PIL import Image
 from io import BytesIO
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,6 +23,8 @@ from app.config import settings
 from app.services.crypto import decrypt_token, encrypt_token
 
 router = APIRouter(prefix="/api/bot", tags=["bot"])
+
+TERMS_VERSION = "2025-04-07"
 
 
 def _tg_api(token: str) -> str:
@@ -206,11 +209,30 @@ async def bot_status(
 
 @router.post("/create", response_model=CreateBotResponse)
 async def create_bot(
+    request: Request,
     data: CreateBotRequest | None = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate a t.me/newbot link for managed bot creation."""
+    # Require explicit acceptance of the public offer (or pre-accepted user)
+    if not user.terms_accepted_at:
+        if not data or not data.terms_accepted:
+            raise HTTPException(
+                status_code=400,
+                detail="Необходимо принять условия Оферты и Политики обработки данных",
+            )
+        # Persist consent
+        user.terms_accepted_at = datetime.datetime.utcnow()
+        user.terms_version = TERMS_VERSION
+        try:
+            user.terms_ip = (request.client.host if request.client else None)
+        except Exception:
+            user.terms_ip = None
+        # Re-attach to session (user from get_current_user may be detached)
+        await db.merge(user)
+        await db.commit()
+
     user = await _load_user_bots(user, db)
     active_tg = next((b for b in user.bots if b.platform == "telegram" and b.is_active), None)
     if active_tg:

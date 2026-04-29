@@ -497,6 +497,8 @@ function Footer() {
             <a href="#features" className="hover:text-white/60 transition-colors cursor-pointer">Возможности</a>
             <a href="#how-it-works" className="hover:text-white/60 transition-colors cursor-pointer">Как работает</a>
             <a href="#faq" className="hover:text-white/60 transition-colors cursor-pointer">FAQ</a>
+            <a href="/offer" className="hover:text-white/60 transition-colors cursor-pointer">Оферта</a>
+            <a href="/privacy" className="hover:text-white/60 transition-colors cursor-pointer">Политика</a>
           </div>
           <div className="text-white/20 text-xs">© 2026 Meepo. Все права защищены.</div>
         </div>

@@ -15,6 +15,9 @@ const BroadcastPage = lazy(() => import('./pages/BroadcastPage'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ContentPlanPage = lazy(() => import('./pages/ContentPlanPage'))
+const OfferPage = lazy(() => import('./pages/OfferPage'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const OfferBotPage = lazy(() => import('./pages/OfferBotPage'))
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'))
 
 class ErrorBoundary extends Component {
@@ -69,6 +72,9 @@ export default function App() {
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
           <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/offer" element={<OfferPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/offer-bot" element={<OfferBotPage />} />
           <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="bot" element={<BotPage />} />

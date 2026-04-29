@@ -54,6 +54,9 @@ class Contact(Base):
     last_message_at: Mapped[datetime.datetime | None] = mapped_column(DateTime)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
     link_sent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    terms_accepted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    terms_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    terms_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
 class Message(Base):

@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ALERT_CHAT_ID: str = ""  # Telegram chat_id for admin alerts
     ALERT_BOT_TOKEN: str = ""  # Bot token used to send alerts
     SENTRY_DSN: str = ""
+    OFFER_BOT_URL: str = "https://meepo.su/offer-bot"
+    TERMS_VERSION: str = "2025-04-07"
 
     model_config = {"env_file": ".env"}
 

@@ -21,6 +21,9 @@ class User(Base):
     cashback_balance: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    terms_accepted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    terms_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    terms_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
     bots: Mapped[list["Bot"]] = relationship("Bot", back_populates="owner", cascade="all, delete-orphan")
@@ -72,6 +75,9 @@ class Contact(Base):
     last_message_at: Mapped[datetime.datetime | None] = mapped_column(DateTime)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
     link_sent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    terms_accepted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    terms_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    terms_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     bot: Mapped["Bot"] = relationship("Bot", back_populates="contacts")
     messages: Mapped[list["Message"]] = relationship("Message", back_populates="contact", cascade="all, delete-orphan")

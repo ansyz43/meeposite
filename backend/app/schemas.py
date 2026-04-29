@@ -142,6 +142,7 @@ class VkConnectRequest(BaseModel):
 # --- Managed Bot creation ---
 class CreateBotRequest(BaseModel):
     name: str | None = Field(None, max_length=64)
+    terms_accepted: bool = False
 
 
 class CreateBotResponse(BaseModel):

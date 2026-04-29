@@ -120,15 +120,20 @@ export default function BotPage() {
   // Managed bot creation
   const [creationLink, setCreationLink] = useState(null)
   const [creationPolling, setCreationPolling] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const pollingRef = useRef(null)
 
   // ── Telegram actions ──
 
   async function createManagedBot() {
     setError('')
+    if (!termsAccepted) {
+      setError('Необходимо принять условия Оферты и Политики обработки данных')
+      return
+    }
     setClaiming(true)
     try {
-      const { data } = await api.post('/api/bot/create')
+      const { data } = await api.post('/api/bot/create', { terms_accepted: true })
       setCreationLink(data.link)
       // Start polling for creation status
       setCreationPolling(true)
@@ -367,8 +372,22 @@ export default function BotPage() {
               description="Нажмите кнопку ниже — система автоматически назначит вам персонального Telegram-бота с ИИ"
               action={
                 <div className="flex flex-col items-center gap-3">
-                  <button onClick={createManagedBot} disabled={claiming}
-                    className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3 disabled:opacity-50">
+                  <label className="flex items-start gap-2 max-w-md text-sm text-white/70 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/[0.04] accent-sky-500"
+                    />
+                    <span>
+                      Я принимаю{' '}
+                      <a href="/offer" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Публичную оферту</a>{' '}
+                      и{' '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Политику обработки персональных данных</a>
+                    </span>
+                  </label>
+                  <button onClick={createManagedBot} disabled={claiming || !termsAccepted}
+                    className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span className="relative z-10 flex items-center gap-2">
                       <Plus size={20} /> {claiming ? 'Создание...' : 'Создать бота'}
                     </span>
