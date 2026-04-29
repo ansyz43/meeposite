@@ -318,8 +318,9 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
         except Exception:
             pass
         await query.answer("Согласие принято", show_alert=False)
+        post_consent = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
         try:
-            await query.message.answer(CONSENT_THANKS)
+            await query.message.answer(post_consent)
         except Exception:
             pass
 
@@ -348,7 +349,8 @@ def create_dispatcher(bot_db_id: int, assistant_name: str, seller_name: str,
                 if text_lower in ("принимаю", "я принимаю", "да", "accept", "i accept"):
                     await _mark_contact_accepted(db_consent, contact_consent.id, "telegram")
                     await db_consent.commit()
-                    await message.answer(CONSENT_THANKS)
+                    post_consent = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
+                    await message.answer(post_consent)
                     return
                 await db_consent.commit()
                 await message.answer(

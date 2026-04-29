@@ -246,10 +246,11 @@ async def _handle_vk_message(http, token, bot_db_id, msg_obj,
                         )
                     )
                     await db_consent.commit()
+                    post_consent = greeting_message or f"Привет! Я {assistant_name}. Чем могу помочь?"
                     await _vk_api(
                         http, "messages.send", token,
                         peer_id=peer_id,
-                        message=CONSENT_THANKS,
+                        message=post_consent,
                         random_id=random.randint(1, 2**31),
                     )
                     return
