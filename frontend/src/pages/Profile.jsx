@@ -199,8 +199,8 @@ export default function Profile() {
             Оплата через банк «Точка» — банковской картой или СБП.
           </p>
           <div className="flex items-baseline gap-2 mb-5">
-            <span className="text-3xl font-display font-bold text-white">10 000 ₽</span>
-            <span className="text-sm text-white/40">/ месяц</span>
+            <span className="text-3xl font-display font-bold text-white">1 ₽</span>
+            <span className="text-sm text-amber-300/80">тестовый режим</span>
           </div>
           <button onClick={buyPro} disabled={paying || subInfo?.has_active_subscription}
             className="btn-primary inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">

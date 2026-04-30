@@ -358,7 +358,7 @@ export default function BotPage() {
             <button onClick={startSubscription} disabled={subscribing}
               className="btn-primary inline-flex items-center gap-2 disabled:opacity-50">
               <span className="relative z-10 flex items-center gap-2">
-                <CreditCard size={16} /> {subscribing ? 'Создание платежа...' : 'Оплатить 10 000 ₽ / месяц'}
+                <CreditCard size={16} /> {subscribing ? 'Создание платежа...' : 'Оплатить 1 ₽ (тест платежки)'}
               </span>
             </button>
             <a href="/offer" target="_blank" rel="noopener noreferrer"
