@@ -23,17 +23,45 @@ const DashboardLayout = lazy(() => import('./components/DashboardLayout'))
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null }
   static getDerivedStateFromError(error) { return { hasError: true, error } }
-  componentDidCatch(error, info) { console.error('React crash:', error, info) }
+  componentDidCatch(error, info) {
+    console.error('React crash:', error, info)
+    // Auto-reload on stale chunk after deploy: hashed file no longer exists.
+    const msg = String(error?.message || '')
+    const isChunkError =
+      /Failed to fetch dynamically imported module/i.test(msg) ||
+      /Loading chunk \d+ failed/i.test(msg) ||
+      /ChunkLoadError/i.test(msg) ||
+      /error loading dynamically imported module/i.test(msg)
+    if (isChunkError) {
+      const KEY = 'meepo:chunk-reload-ts'
+      const last = Number(sessionStorage.getItem(KEY) || 0)
+      // Avoid infinite reload loop: only auto-reload once per 30s per session.
+      if (Date.now() - last > 30000) {
+        sessionStorage.setItem(KEY, String(Date.now()))
+        window.location.reload()
+      }
+    }
+  }
   render() {
     if (this.state.hasError) {
+      const msg = String(this.state.error?.message || '')
+      const isChunk = /Failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i.test(msg)
       return (
         <div className="flex items-center justify-center h-screen">
           <div className="glass-card p-8 text-center max-w-md">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Произошла ошибка</h2>
-            <p className="text-white/50 text-sm mb-4">{this.state.error?.message}</p>
-            <button onClick={() => { this.setState({ hasError: false }); window.location.href = '/dashboard' }}
-              className="btn-primary">Вернуться</button>
+            <h2 className="text-xl font-bold text-white mb-2">
+              {isChunk ? 'Сайт обновился' : 'Произошла ошибка'}
+            </h2>
+            <p className="text-white/50 text-sm mb-4">
+              {isChunk ? 'Загружаем новую версию...' : msg}
+            </p>
+            <button
+              onClick={() => { this.setState({ hasError: false }); window.location.reload() }}
+              className="btn-primary"
+            >
+              Обновить страницу
+            </button>
           </div>
         </div>
       )
